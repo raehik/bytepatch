@@ -55,3 +55,4 @@ executables:
     dependencies:
     - bytepatch
     - optparse-applicative
+    - yaml
