@@ -1,19 +1,33 @@
-{-# LANGUAGE OverloadedStrings #-} -- TODO TMP
+{- | Low-level patchscript processing and application.
+
+Patchscripts are applied as a list of @(skip x, write in-place y)@ commands. An
+offset-based format is much simpler to use, however. This module processes such
+offset patchscripts into a "linear" patchscript, and provides a stream patching
+algorithm that can be applied to any forward-seeking byte stream.
+
+Some core types are parameterized over the stream type/patch content. This
+enables writing patches in any form (e.g. UTF-8 text), which are then processed
+into an applicable patch by transforming edits into a concrete binary
+representation (e.g. null-terminated UTF-8 bytestring). See TODO module for
+more.
+-}
 
 module BytePatch.Patch
   (
-  -- * Core patch algorithm
-    apply
+  -- * Core types
+    Patchscript
+  , Overwrite(..)
+  , OverwriteMeta(..)
+
+  -- * Patch algorithm
+  , apply
   , MonadFwdByteStream
   , Cfg(..)
   , Error(..)
 
   -- * Patchscript generation
-  , gen
   , Patch(..)
-  , Patchscript
-  , Overwrite(..)
-  , OverwriteMeta(..)
+  , gen
   , ErrorGen(..)
   ) where
 
@@ -25,6 +39,25 @@ import           System.IO               ( Handle, SeekMode(..), hSeek )
 import           Data.List               ( sortBy )
 
 type Bytes = BS.ByteString
+
+-- | A list of "keep n bytes, write data in-place" actions.
+type Patchscript a = [(Int, Overwrite a)]
+
+-- | A single replacement (in-place edit).
+--
+-- Replacements may store extra metadata that can be used at patch time to
+-- validate input data (i.e. patching correct file).
+data Overwrite a = Overwrite a (OverwriteMeta a)
+    deriving (Eq, Show)
+
+-- | Optional patch time data for an overwrite.
+data OverwriteMeta a = OverwriteMeta
+  { omNullTerminates :: Maybe Int
+  -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
+
+  , omExpected       :: Maybe a
+  -- ^ Stream segment should be this.
+  } deriving (Eq, Show, Functor)
 
 -- TODO also require reporting cursor position (for error reporting)
 class Monad m => MonadFwdByteStream m where
@@ -65,25 +98,6 @@ instance MonadIO m => MonadFwdByteStream (ReaderT Handle m) where
     overwrite bs = do
         hdl <- ask
         liftIO $ BS.hPut hdl bs
-
--- | A list of "skip x bytes, overwrite with bytestring y" actions.
-type Patchscript a = [(Int, Overwrite a)]
-
--- | A single replacement (in-place edit).
---
--- Replacements may store extra metadata that can be used at patch time to
--- validate input data (i.e. patching correct file).
-data Overwrite a = Overwrite a (OverwriteMeta a)
-    deriving (Eq, Show)
-
--- | Optional patch time data for an overwrite.
-data OverwriteMeta a = OverwriteMeta
-  { omNullTerminates :: Maybe Int
-  -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
-
-  , omExpected       :: Maybe a
-  -- ^ Stream segment should be this.
-  } deriving (Eq, Show, Functor)
 
 -- | Patch time config.
 data Cfg = Cfg
@@ -144,16 +158,19 @@ apply cfg = go
 data Patch a = Patch a Int (OverwriteMeta a)
     deriving (Eq, Show)
 
--- | Error encountered during patchscript generation.
+-- | Error encountered during linear patchscript generation.
 data ErrorGen a
   = ErrorGenOverlap (Patch a) (Patch a)
-  -- ^ Two patches wrote to the same offset.
-  --
-  -- TODO: we could allow this e.g. by selecting one overwrite that "wins"
-  -- (likely via user annotation) and rewriting the other one to remove the
-  -- collision.
+  -- ^ Two edits wrote to the same offset.
     deriving (Eq, Show)
 
+-- | Process an offset patchscript into a linear patchscript.
+--
+-- Errors are reported, but do not interrupt patch generation. The user could
+-- discard patchscripts that errored, or perhaps attempt to recover them. This
+-- is what we do for errors:
+--
+--   * overlapping edit: later edit is skipped & overlapping edits reported
 gen :: [Patch Bytes] -> (Patchscript Bytes, [ErrorGen Bytes])
 gen pList =
     let pList'                 = sortBy comparePatchOffsets pList
@@ -195,4 +212,3 @@ tmpExPatchscript =
 tmpExInitialState :: (BS.ByteString, BB.Builder)
 tmpExInitialState = ("abcdefghijklmnopqrstuvwxyz", mempty)
 -}
-
