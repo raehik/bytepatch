@@ -1,7 +1,5 @@
 module BytePatch.Pretty.PatchRep where
 
-import           BytePatch.HexByteString
-
 import qualified Data.ByteString            as BS
 import qualified Data.Text.Encoding         as Text
 import           Data.Text                  ( Text )
@@ -24,10 +22,6 @@ class PatchRep a where
 -- | Bytestrings are copied as-is.
 instance PatchRep BS.ByteString where
     toPatchRep = Right . id
-
--- | Bytestring wrapper for Aeson.
-instance PatchRep HexByteString where
-    toPatchRep = Right . unHexByteString
 
 -- | Text is converted to UTF-8 bytes and null-terminated.
 instance PatchRep Text where

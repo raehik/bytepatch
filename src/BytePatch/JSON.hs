@@ -4,8 +4,8 @@
 module BytePatch.JSON where
 
 import           BytePatch.Core
-import           BytePatch.HexByteString
 import           BytePatch.Pretty
+import           BytePatch.Pretty.HexByteString
 import           Data.Aeson
 import           GHC.Generics       (Generic)
 import           Text.Megaparsec
@@ -13,7 +13,7 @@ import           Data.Void
 
 instance FromJSON HexByteString where
     parseJSON = withText "hex bytestring" $ \t ->
-        case parseMaybe @Void pHexByteString t of
+        case parseMaybe @Void parseHexByteString t of
           Nothing -> fail "failed to parse hex bytestring (TODO)"
           Just t' -> pure (HexByteString t')
 instance ToJSON   HexByteString where

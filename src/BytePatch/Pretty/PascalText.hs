@@ -10,6 +10,7 @@ decide the maximum bytesize of the string on creation.
 module BytePatch.Pretty.PascalText where
 
 import           BytePatch.Pretty.PatchRep
+
 import qualified Data.Text.Encoding         as Text
 import           Data.Text                  ( Text )
 import qualified Data.ByteString            as BS

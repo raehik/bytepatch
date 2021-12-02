@@ -56,3 +56,13 @@ executables:
     - bytepatch
     - optparse-applicative
     - yaml
+
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs: test
+    build-tools:
+    - hspec-discover
+    dependencies:
+    - bytepatch
+    - hspec
