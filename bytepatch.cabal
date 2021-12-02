@@ -1,0 +1,100 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           bytepatch
+version:        0.1.0
+synopsis:       Patch byte-representable data in a bytestream.
+homepage:       https://github.com/raehik/bytepatch#readme
+bug-reports:    https://github.com/raehik/bytepatch/issues
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/raehik/bytepatch
+
+library
+  exposed-modules:
+      BytePatch.HexByteString
+      BytePatch.JSON
+      BytePatch.Patch
+      BytePatch.Pretty
+  other-modules:
+      Paths_bytepatch
+  hs-source-dirs:
+      src
+  default-extensions:
+      EmptyCase
+      FlexibleContexts
+      FlexibleInstances
+      InstanceSigs
+      MultiParamTypeClasses
+      LambdaCase
+      DeriveGeneric
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      GeneralizedNewtypeDeriving
+      StandaloneDeriving
+      BangPatterns
+      KindSignatures
+      TypeOperators
+      TypeApplications
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , generic-optics
+    , megaparsec
+    , mtl
+    , optics
+    , text
+  default-language: Haskell2010
+
+executable bytepatch
+  main-is: Main.hs
+  other-modules:
+      Paths_bytepatch
+  hs-source-dirs:
+      app
+  default-extensions:
+      EmptyCase
+      FlexibleContexts
+      FlexibleInstances
+      InstanceSigs
+      MultiParamTypeClasses
+      LambdaCase
+      DeriveGeneric
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      GeneralizedNewtypeDeriving
+      StandaloneDeriving
+      BangPatterns
+      KindSignatures
+      TypeOperators
+      TypeApplications
+  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base
+    , bytepatch
+    , bytestring
+    , generic-optics
+    , megaparsec
+    , mtl
+    , optics
+    , optparse-applicative
+    , text
+  default-language: Haskell2010
