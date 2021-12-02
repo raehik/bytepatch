@@ -1,28 +1,39 @@
--- | Small interface on top of the linear binary patch algorithm.
+-- | Convenience interface to enable defining edits at offsets with some
+--   optional safety checks.
+
 module BytePatch.Pretty
-  ( MultiPatches(..)
+  (
+  -- * Core types
+    MultiPatches(..)
   , MultiPatch(..)
   , Offset(..)
-  , Cfg(..)
-  , PatchType(..)
+
+  -- * Convenience functions
+  , normalizeSimple
+
+  -- * Low-level interface
   , applyBaseOffset
   , listAlgebraConcatEtc
   , normalize
-  , ToBinPatch(..)
-
-  , BP.OverwriteMeta(..)
   ) where
 
-import qualified BytePatch.Patch            as BP
-import           BytePatch.HexByteString
+import           BytePatch.Core
+import           BytePatch.Linear.Core
+import           BytePatch.Pretty.PatchRep
 
 import qualified Data.ByteString            as BS
-import qualified Data.Text.Encoding         as Text
-import           Data.Text                  ( Text )
 import           Data.Maybe                 ( fromMaybe )
 import           GHC.Generics               ( Generic )
 
 type Bytes = BS.ByteString
+
+-- | Normalize a set of 'MultiPatches', discarding everything on error.
+normalizeSimple :: PatchRep a => [MultiPatches a] -> Maybe [Patch Bytes]
+normalizeSimple mps =
+    let (p, errs) = listAlgebraConcatEtc . map applyBaseOffset $ mps
+     in case errs of
+          _:_ -> Nothing
+          []  -> normalize p
 
 -- | A list of patches sharing a configuration, each applied at a list of
 --   offsets, abstracted over patch type.
@@ -84,7 +95,7 @@ data Offset a = Offset
   -- ^ Maximum bytestring length allowed to patch in at this offset.
   -- TODO: use single range/span instead (default 0->x, also allow y->x)
 
-  , oPatchMeta      :: Maybe (BP.OverwriteMeta a)
+  , oPatchMeta      :: Maybe (OverwriteMeta a)
   -- ^ Patch-time info for the overwrite at this offset.
   --
   -- Named "patch meta" instead of the more correct "overwrite meta" for more
@@ -92,28 +103,11 @@ data Offset a = Offset
   -- plus it means the default can be inserted later on.
   } deriving (Eq, Show, Generic)
 
-data Cfg = Cfg
-  { cfgPatchType :: PatchType
-  } deriving (Eq, Show)
-
--- | Indicates the type of patch being done. Both binary and text patches are
---   "compiled" down to simpler binary patches, but by remembering the original
---   format, we can attempt to provide better error behaviour.
-data PatchType
-  = PatchTypeBinary
-  -- ^ Binary patch: show errors etc. using binary-friendly hex bytes
-  | PatchTypeUTF8
-  -- ^ Text (UTF-8) patch: show errors etc. using text (UTF-8)
-    deriving (Eq, Show)
-
 -- Drops no info, not easy to consume.
-applyBaseOffset :: [MultiPatches a] -> [(Int, [(MultiPatch a, [Offset a])])]
-applyBaseOffset = map go
-  where
-    go :: MultiPatches a -> (Int, [(MultiPatch a, [Offset a])])
-    go mps = (baseOffset, recalculateMultiPatchOffsets baseOffset (mpsPatches mps))
-      where
-        baseOffset = fromMaybe 0 (mpsBaseOffset mps)
+applyBaseOffset :: MultiPatches a -> (Int, [(MultiPatch a, [Offset a])])
+applyBaseOffset mps =
+    (baseOffset, recalculateMultiPatchOffsets baseOffset (mpsPatches mps))
+      where baseOffset = fromMaybe 0 (mpsBaseOffset mps)
 
 -- lmao this sucks. generalisation bad
 listAlgebraConcatEtc :: [(a, [(b, [c])])] -> ([b], [(c, a)])
@@ -137,52 +131,37 @@ recalculateOffsets baseOffset = partitionMaybe go
     go o = if actualOffset >= 0 then Just (o { oOffset = actualOffset }) else Nothing
       where actualOffset = oOffset o - baseOffset
 
-normalize :: ToBinPatch a => [MultiPatch a] -> Maybe [BP.Patch Bytes]
+normalize :: PatchRep a => [MultiPatch a] -> Maybe [Patch Bytes]
 normalize xs = concat <$> mapM go xs
-  where
-    go (MultiPatch contents os) = mapM (tryMakeSingleReplace contents) os
+  where go (MultiPatch contents os) = mapM (tryMakeSingleReplace contents) os
 
-tryMakeSingleReplace :: ToBinPatch a => a -> Offset a -> Maybe (BP.Patch Bytes)
+-- TODO now can error with "[expected] content has no valid patch rep"
+tryMakeSingleReplace :: PatchRep a => a -> Offset a -> Maybe (Patch Bytes)
 tryMakeSingleReplace contents (Offset os maos maxLen mMeta) =
-    if offsetIsCorrect
-    then case maxLen of
-           Just len -> if BS.length bs > len then Nothing else go
-           Nothing  -> go
-    else Nothing
+    case toPatchRep contents of
+      Left errStr -> error errStr -- TODO
+      Right bs ->
+        if   offsetIsCorrect
+        then case maxLen of
+               Just len -> if BS.length bs > len then Nothing else overwrite bs
+               Nothing  -> overwrite bs
+        else Nothing
   where
-    go = Just (BP.Patch bs os metaBin)
-    metaBin = fmap toBinPatch meta
-    bs = toBinPatch contents
-    meta = fromMaybe metaDefault mMeta
-    metaDefault = BP.OverwriteMeta Nothing Nothing
-    offsetIsCorrect = case maos of
-      Nothing -> True
-      Just aos -> os == aos
-
--- | How to turn a given type into a binary patch.
-class ToBinPatch a where
-    toBinPatch :: a -> BS.ByteString
-
--- | Bytestrings are copied as-is.
-instance ToBinPatch BS.ByteString where
-    toBinPatch = id
-
--- | Text is converted to UTF-8 bytes and null-terminated (!).
-instance ToBinPatch Text where
-    -- TODO sucks I gotta do a snoc here >:(
-    toBinPatch t = BS.snoc (Text.encodeUtf8 t) 0x00
-
--- | Bytestring wrapper for Aeson.
-instance ToBinPatch HexByteString where
-    toBinPatch = unHexByteString
+    overwrite bs = case traverse toPatchRep meta of
+                     Left errStr -> error errStr -- TODO
+                     Right meta' -> Just $ Patch { patchContents = bs
+                                                 , patchOffset   = os
+                                                 , patchMeta     = meta' }
+    meta = fromMaybe (OverwriteMeta Nothing Nothing) mMeta
+    offsetIsCorrect = case maos of Nothing  -> True
+                                   Just aos -> os == aos
 
 --------------------------------------------------------------------------------
 
+-- | Map a failable function over a list, retaining "failed" 'Nothing' results.
 partitionMaybe :: (a -> Maybe b) -> [a] -> ([b], [a])
 partitionMaybe f =
-    foldr
-        (\x -> maybe (mapSnd (x:)) (\y -> mapFst (y:)) (f x))
-        ([], [])
+    foldr (\x -> maybe (mapSnd (x:)) (\y -> mapFst (y:)) (f x)) ([], [])
 
 mapFst :: (a -> c) -> (a, b) -> (c, b)
 mapFst f (a, b) = (f a, b)

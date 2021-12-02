@@ -12,52 +12,23 @@ representation (e.g. null-terminated UTF-8 bytestring). See TODO module for
 more.
 -}
 
-module BytePatch.Patch
-  (
-  -- * Core types
-    Patchscript
-  , Overwrite(..)
-  , OverwriteMeta(..)
-
-  -- * Patch algorithm
-  , apply
-  , MonadFwdByteStream
+module BytePatch.Linear.Patch
+  ( patch
+  , MonadFwdByteStream(..)
   , Cfg(..)
   , Error(..)
-
-  -- * Patchscript generation
-  , Patch(..)
-  , gen
-  , ErrorGen(..)
   ) where
+
+import           BytePatch.Core
+import           BytePatch.Linear.Core
 
 import qualified Data.ByteString         as BS
 import qualified Data.ByteString.Builder as BB
 import           Control.Monad.State
 import           Control.Monad.Reader
 import           System.IO               ( Handle, SeekMode(..), hSeek )
-import           Data.List               ( sortBy )
 
 type Bytes = BS.ByteString
-
--- | A list of "keep n bytes, write data in-place" actions.
-type Patchscript a = [(Int, Overwrite a)]
-
--- | A single replacement (in-place edit).
---
--- Replacements may store extra metadata that can be used at patch time to
--- validate input data (i.e. patching correct file).
-data Overwrite a = Overwrite a (OverwriteMeta a)
-    deriving (Eq, Show)
-
--- | Optional patch time data for an overwrite.
-data OverwriteMeta a = OverwriteMeta
-  { omNullTerminates :: Maybe Int
-  -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
-
-  , omExpected       :: Maybe a
-  -- ^ Stream segment should be this.
-  } deriving (Eq, Show, Functor)
 
 -- TODO also require reporting cursor position (for error reporting)
 class Monad m => MonadFwdByteStream m where
@@ -117,8 +88,8 @@ data Error
   | ErrorPatchDidNotMatchExpected Bytes Bytes
     deriving (Eq, Show)
 
-apply :: MonadFwdByteStream m => Cfg -> Patchscript Bytes -> m (Maybe Error)
-apply cfg = go
+patch :: MonadFwdByteStream m => Cfg -> Patchscript Bytes -> m (Maybe Error)
+patch cfg = go
   where
     go [] = return Nothing
     go ((n, Overwrite bs meta):es) = do
@@ -153,52 +124,6 @@ apply cfg = go
           False -> if   bs == bsExpected
                    then Nothing
                    else Just (bs, bsExpected)
-
--- | Write the given data into the given offset.
-data Patch a = Patch a Int (OverwriteMeta a)
-    deriving (Eq, Show)
-
--- | Error encountered during linear patchscript generation.
-data ErrorGen a
-  = ErrorGenOverlap (Patch a) (Patch a)
-  -- ^ Two edits wrote to the same offset.
-    deriving (Eq, Show)
-
--- | Process an offset patchscript into a linear patchscript.
---
--- Errors are reported, but do not interrupt patch generation. The user could
--- discard patchscripts that errored, or perhaps attempt to recover them. This
--- is what we do for errors:
---
---   * overlapping edit: later edit is skipped & overlapping edits reported
-gen :: [Patch Bytes] -> (Patchscript Bytes, [ErrorGen Bytes])
-gen pList =
-    let pList'                 = sortBy comparePatchOffsets pList
-        (_, script, errors, _) = execState (go pList') (0, [], [], undefined)
-        -- I believe the undefined is inaccessible providing the first patch has
-        -- a non-negative offset (negative offsets are forbidden)
-     in (reverse script, reverse errors)
-  where
-    comparePatchOffsets (Patch _ o1 _) (Patch _ o2 _) = compare o1 o2
-    go :: (MonadState (Int, Patchscript Bytes, [ErrorGen Bytes], Patch Bytes) m) => [Patch Bytes] -> m ()
-    go [] = return ()
-    go (p@(Patch bs offset meta):ps) = do
-        (cursor, script, errors, prevPatch) <- get
-        case trySkipTo offset cursor of
-          -- next offset is behind current cursor: overlapping patches
-          -- record error, recover via dropping patch
-          Left _ -> do
-            let e = ErrorGenOverlap p prevPatch
-            let errors' = e : errors
-            put (cursor, script, errors', p)
-            go ps
-          Right skip -> do
-            let cursor' = cursor + skip + BS.length bs
-                o       = Overwrite bs meta
-            put (cursor', (skip, o):script, errors, p)
-            go ps
-    trySkipTo to from =
-        let diff = to - from in if diff >= 0 then Right diff else Left (-diff)
 
 {-
 finishPurePatch :: (BS.ByteString, BB.Builder) -> BL.ByteString

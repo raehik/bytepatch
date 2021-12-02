@@ -20,10 +20,15 @@ source-repository head
 
 library
   exposed-modules:
+      BytePatch.Core
       BytePatch.HexByteString
       BytePatch.JSON
-      BytePatch.Patch
+      BytePatch.Linear.Core
+      BytePatch.Linear.Gen
+      BytePatch.Linear.Patch
       BytePatch.Pretty
+      BytePatch.Pretty.PascalText
+      BytePatch.Pretty.PatchRep
   other-modules:
       Paths_bytepatch
   hs-source-dirs:

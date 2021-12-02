@@ -3,7 +3,7 @@
 -- | Aeson instances for various types.
 module BytePatch.JSON where
 
-import           BytePatch.Patch
+import           BytePatch.Core
 import           BytePatch.HexByteString
 import           BytePatch.Pretty
 import           Data.Aeson
