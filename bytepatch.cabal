@@ -54,14 +54,14 @@ library
       TypeOperators
       TypeApplications
   build-depends:
-      aeson
-    , base
-    , bytestring
-    , generic-optics
-    , megaparsec
-    , mtl
-    , optics
-    , text
+      aeson >=1.5 && <2.1
+    , base >=4.12 && <4.17
+    , bytestring >=0.10 && <0.12
+    , generic-optics >=2.1 && <2.4
+    , megaparsec >=9.0 && <9.3
+    , mtl ==2.2.*
+    , optics >=0.3 && <0.5
+    , text ==1.2.*
   default-language: Haskell2010
 
 executable bytepatch
@@ -94,17 +94,17 @@ executable bytepatch
       TypeApplications
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , base
+      aeson >=1.5 && <2.1
+    , base >=4.12 && <4.17
     , bytepatch
-    , bytestring
-    , generic-optics
-    , megaparsec
-    , mtl
-    , optics
-    , optparse-applicative
-    , text
-    , yaml
+    , bytestring >=0.10 && <0.12
+    , generic-optics >=2.1 && <2.4
+    , megaparsec >=9.0 && <9.3
+    , mtl ==2.2.*
+    , optics >=0.3 && <0.5
+    , optparse-applicative >=0.16.1 && <0.17
+    , text ==1.2.*
+    , yaml >=0.11.7 && <0.12
   default-language: Haskell2010
 
 test-suite spec
@@ -139,14 +139,14 @@ test-suite spec
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      aeson
-    , base
+      aeson >=1.5 && <2.1
+    , base >=4.12 && <4.17
     , bytepatch
-    , bytestring
-    , generic-optics
+    , bytestring >=0.10 && <0.12
+    , generic-optics >=2.1 && <2.4
     , hspec
-    , megaparsec
-    , mtl
-    , optics
-    , text
+    , megaparsec >=9.0 && <9.3
+    , mtl ==2.2.*
+    , optics >=0.3 && <0.5
+    , text ==1.2.*
   default-language: Haskell2010
