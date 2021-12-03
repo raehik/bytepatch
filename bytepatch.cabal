@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           bytepatch
-version:        0.1.0
+version:        0.2.0
 synopsis:       Patch byte-representable data in a bytestream.
 homepage:       https://github.com/raehik/bytepatch#readme
 bug-reports:    https://github.com/raehik/bytepatch/issues
