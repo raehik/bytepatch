@@ -1,5 +1,5 @@
 name: bytepatch
-version: "0.2.0"
+version: "0.2.1"
 synopsis: Patch byte-representable data in a bytestream.
 description: Please see README.md.
 extra-source-files:
