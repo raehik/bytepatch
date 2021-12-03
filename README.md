@@ -49,3 +49,6 @@ again. I'm gonna make a mistake eventually.
 Instead, I described my patches in YAML, and wrote a tool to apply them. Now my
 changes and my notes are the same file, which can be checked for correctness and
 applied automatically.
+
+## License
+Provided under the MIT license. Please see `LICENSE` for the full license text.

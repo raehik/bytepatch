@@ -9,6 +9,8 @@ version:        0.2.0
 synopsis:       Patch byte-representable data in a bytestream.
 homepage:       https://github.com/raehik/bytepatch#readme
 bug-reports:    https://github.com/raehik/bytepatch/issues
+license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
