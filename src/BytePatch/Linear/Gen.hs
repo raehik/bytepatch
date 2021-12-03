@@ -1,19 +1,23 @@
+{-# LANGUAGE DataKinds, TypeFamilies, UndecidableInstances #-}
+
 module BytePatch.Linear.Gen (gen, Error(..)) where
 
 import           BytePatch.Core
-import           BytePatch.Linear.Core
 
 import qualified Data.ByteString        as BS
 import           Control.Monad.State
 import qualified Data.List              as List
+import           GHC.Natural
 
 type Bytes = BS.ByteString
 
 -- | Error encountered during linear patchscript generation.
-data Error a
-  = ErrorOverlap (Patch a) (Patch a)
+data Error s a
+  = ErrorOverlap (Patch s a) (Patch s a)
   -- ^ Two edits wrote to the same offset.
-    deriving (Eq, Show)
+
+deriving instance (Eq (SeekRep s), Eq a) => Eq (Error s a)
+deriving instance (Show (SeekRep s), Show a) => Show (Error s a)
 
 -- | Process a list of patches into a linear patch script.
 --
@@ -22,7 +26,9 @@ data Error a
 -- is what we do for errors:
 --
 --   * overlapping edit: later edit is skipped & overlapping edits reported
-gen :: [Patch Bytes] -> (PatchScript Bytes, [Error Bytes])
+gen
+    :: [Patch 'AbsSeek Bytes]
+    -> ([Patch 'FwdSeek Bytes], [Error 'AbsSeek Bytes])
 gen pList =
     let pList'                 = List.sortBy comparePatchOffsets pList
         (_, script, errors, _) = execState (go pList') (0, [], [], undefined)
@@ -30,25 +36,24 @@ gen pList =
         -- a non-negative offset (negative offsets are forbidden)
      in (reverse script, reverse errors)
   where
-    comparePatchOffsets (WithOffset o1 _ ) (WithOffset o2 _) = compare o1 o2
+    comparePatchOffsets (Patch o1 _) (Patch o2 _) = compare o1 o2
     go
-        :: (MonadState (Int, PatchScript Bytes, [Error Bytes], Patch Bytes) m)
-        => [Patch Bytes]
+        :: (MonadState (Natural, [Patch 'FwdSeek Bytes], [Error 'AbsSeek Bytes], Patch 'AbsSeek Bytes) m)
+        => [Patch 'AbsSeek Bytes]
         -> m ()
     go [] = return ()
-    go (p@(WithOffset offset edit) : ps) = do
+    go (p@(Patch offset edit) : ps) = do
         (cursor, script, errors, prevPatch) <- get
-        case trySkipTo offset cursor of
+        case offset `minusNaturalMaybe` cursor of
           -- next offset is behind current cursor: overlapping patches
           -- record error, recover via dropping patch
-          Left _ -> do
+          Nothing -> do
             let e = ErrorOverlap p prevPatch
             let errors' = e : errors
             put (cursor, script, errors', p)
             go ps
-          Right skip -> do
-            let cursor' = cursor + skip + BS.length (editData edit)
-            put (cursor', WithOffset skip edit : script, errors, p)
+          Just skip -> do
+            let dataLen = fromIntegral $ BS.length $ editData edit
+            let cursor' = cursor + skip + dataLen
+            put (cursor', Patch skip edit : script, errors, p)
             go ps
-    trySkipTo to from =
-        let diff = to - from in if diff >= 0 then Right diff else Left (-diff)

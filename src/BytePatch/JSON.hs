@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | Aeson instances for various types.
 module BytePatch.JSON where
@@ -29,16 +30,16 @@ instance ToJSON   a => ToJSON   (Pretty.CommonMultiEdits a) where
 instance FromJSON a => FromJSON (Pretty.CommonMultiEdits a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 4
 
-instance ToJSON   a => ToJSON   (Pretty.MultiEdit a) where
+instance (ToJSON   (SeekRep s), ToJSON   a) => ToJSON   (Pretty.MultiEdit s a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
     toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
-instance FromJSON a => FromJSON (Pretty.MultiEdit a) where
+instance (FromJSON (SeekRep s), FromJSON a) => FromJSON (Pretty.MultiEdit s a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
 
-instance ToJSON   a => ToJSON   (Pretty.EditOffset a) where
+instance (ToJSON   (SeekRep s), ToJSON   a) => ToJSON   (Pretty.EditOffset s a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
     toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
-instance FromJSON a => FromJSON (Pretty.EditOffset a) where
+instance (FromJSON (SeekRep s), FromJSON a) => FromJSON (Pretty.EditOffset s a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
 
 instance ToJSON   a => ToJSON   (EditMeta a) where

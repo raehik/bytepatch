@@ -30,7 +30,6 @@ library
   exposed-modules:
       BytePatch.Core
       BytePatch.JSON
-      BytePatch.Linear.Core
       BytePatch.Linear.Gen
       BytePatch.Linear.Patch
       BytePatch.Pretty
