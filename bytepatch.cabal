@@ -7,11 +7,17 @@ cabal-version: 1.12
 name:           bytepatch
 version:        0.2.0
 synopsis:       Patch byte-representable data in a bytestream.
+description:    Please see README.md.
+category:       CLI
 homepage:       https://github.com/raehik/bytepatch#readme
 bug-reports:    https://github.com/raehik/bytepatch/issues
+author:         Ben Orchard
+maintainer:     Ben Orchard <thefirstmuffinman@gmail.com>
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
+tested-with:
+    GHC >= 8.6 && < 9.2
 extra-source-files:
     README.md
     CHANGELOG.md

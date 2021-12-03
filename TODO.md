@@ -1,3 +1,6 @@
+  * [ ] Refactored codebase to focus more on arbitrary edits, which we then
+        build on by saying "they're at an offset", "they're in-place". Should
+        keep thinking about what I can/should model.
   * [ ] QuickCheck tests for LinearPatch (would be very fun!)
 
 Partly related:

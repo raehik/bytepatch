@@ -13,20 +13,30 @@ more.
 -}
 
 module BytePatch.Linear.Patch
-  ( patch
-  , MonadFwdByteStream(..)
+  (
+  -- * Patch interface
+    MonadFwdByteStream(..)
   , Cfg(..)
   , Error(..)
+
+  -- * Prepared patchers
+  , patchPure
+
+  -- * General patcher
+  , patch
+
   ) where
 
 import           BytePatch.Core
 import           BytePatch.Linear.Core
 
 import qualified Data.ByteString         as BS
+import qualified Data.ByteString.Lazy    as BL
 import qualified Data.ByteString.Builder as BB
 import           Control.Monad.State
 import           Control.Monad.Reader
 import           System.IO               ( Handle, SeekMode(..), hSeek )
+import           Optics
 
 type Bytes = BS.ByteString
 
@@ -43,11 +53,7 @@ class Monad m => MonadFwdByteStream m where
     overwrite :: Bytes -> m ()
 
 instance Monad m => MonadFwdByteStream (StateT (Bytes, BB.Builder) m) where
-    readahead n = do
-        (src, out) <- get
-        let (bs, src') = BS.splitAt n src
-        put (src', out)
-        return bs
+    readahead n = BS.take n <$> gets fst
     advance n = do
         (src, out) <- get
         let (bs, src') = BS.splitAt n src
@@ -88,21 +94,24 @@ data Error
   | ErrorPatchDidNotMatchExpected Bytes Bytes
     deriving (Eq, Show)
 
-patch :: MonadFwdByteStream m => Cfg -> Patchscript Bytes -> m (Maybe Error)
+patch
+    :: MonadFwdByteStream m
+    => Cfg -> PatchScript Bytes
+    -> m (Maybe Error)
 patch cfg = go
   where
     go [] = return Nothing
-    go ((n, Overwrite bs meta):es) = do
+    go (WithOffset n (Edit bs meta):es) = do
         advance n
         bsStream <- readahead $ BS.length bs -- TODO catch overlong error
 
         -- if provided, strip trailing nulls from to-overwrite bytestring
-        case tryStripNulls bsStream (omNullTerminates meta) of
+        case tryStripNulls bsStream (emNullTerminates meta) of
           Nothing -> return $ Just ErrorPatchUnexpectedNonnull
           Just bsStream' -> do
 
             -- if provided, check the to-overwrite bytestring matches expected
-            case checkExpected bsStream' (omExpected meta) of
+            case checkExpected bsStream' (emExpected meta) of
               Just (bsa, bse) -> return $ Just $ ErrorPatchDidNotMatchExpected bsa bse
               Nothing -> overwrite bs >> go es
 
@@ -125,15 +134,11 @@ patch cfg = go
                    then Nothing
                    else Just (bs, bsExpected)
 
-{-
-finishPurePatch :: (BS.ByteString, BB.Builder) -> BL.ByteString
-finishPurePatch (src, out) = BB.toLazyByteString $ out <> BB.byteString src
-
-tmpExPatchscript :: Patchscript
-tmpExPatchscript =
-  [ (1, "ABC")
-  , (2, "DEFG") ]
-
-tmpExInitialState :: (BS.ByteString, BB.Builder)
-tmpExInitialState = ("abcdefghijklmnopqrstuvwxyz", mempty)
--}
+-- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
+patchPure :: Cfg -> PatchScript Bytes -> BS.ByteString -> Either Error BL.ByteString
+patchPure cfg ps bs =
+    let (mErr, (bsRemaining, bbPatched)) = runState (patch cfg ps) (bs, mempty)
+        bbPatched' = bbPatched <> BB.byteString bsRemaining
+     in case mErr of
+          Just err -> Left err
+          Nothing  -> Right $ BB.toLazyByteString bbPatched'

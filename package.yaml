@@ -1,12 +1,19 @@
 name: bytepatch
 version: "0.2.0"
 synopsis: Patch byte-representable data in a bytestream.
-github: raehik/bytepatch
-license: MIT
-license-file: LICENSE
+description: Please see README.md.
 extra-source-files:
 - README.md
 - CHANGELOG.md
+
+github: raehik/bytepatch
+license: MIT
+license-file: LICENSE
+
+category: CLI
+maintainer: Ben Orchard <thefirstmuffinman@gmail.com>
+author: Ben Orchard
+tested-with: GHC >= 8.6 && < 9.2
 
 # all unintrusive extensions from Alexis King's 2018 recommended defaults
 # https://lexi-lambda.github.io/blog/2018/02/10/an-opinionated-guide-to-haskell-in-2018/

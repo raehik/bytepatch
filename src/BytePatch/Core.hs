@@ -1,17 +1,18 @@
 module BytePatch.Core where
 
--- | A single in-place edit.
---
--- Overwrites may store extra metadata that can be used at patch time to
--- validate input data (i.e. check we're patching the expected file).
-data Overwrite a = Overwrite a (OverwriteMeta a)
-    deriving (Eq, Show)
+import GHC.Generics ( Generic )
 
--- | Optional patch time data for an overwrite.
-data OverwriteMeta a = OverwriteMeta
-  { omNullTerminates :: Maybe Int
+-- | Data to add to a stream.
+data Edit a = Edit
+  { editData :: a
+  , editMeta :: EditMeta a
+  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
+
+-- | Various optional metadata defining expected existing data for an 'Edit'.
+data EditMeta a = EditMeta
+  { emNullTerminates :: Maybe Int
   -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
 
-  , omExpected       :: Maybe a
+  , emExpected       :: Maybe a
   -- ^ Stream segment should be this.
-  } deriving (Eq, Show, Functor, Foldable, Traversable)
+  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)

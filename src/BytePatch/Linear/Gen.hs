@@ -15,14 +15,14 @@ data Error a
   -- ^ Two edits wrote to the same offset.
     deriving (Eq, Show)
 
--- | Process an offset patchscript into a linear patchscript.
+-- | Process a list of patches into a linear patch script.
 --
 -- Errors are reported, but do not interrupt patch generation. The user could
 -- discard patchscripts that errored, or perhaps attempt to recover them. This
 -- is what we do for errors:
 --
 --   * overlapping edit: later edit is skipped & overlapping edits reported
-gen :: [Patch Bytes] -> (Patchscript Bytes, [Error Bytes])
+gen :: [Patch Bytes] -> (PatchScript Bytes, [Error Bytes])
 gen pList =
     let pList'                 = List.sortBy comparePatchOffsets pList
         (_, script, errors, _) = execState (go pList') (0, [], [], undefined)
@@ -30,10 +30,13 @@ gen pList =
         -- a non-negative offset (negative offsets are forbidden)
      in (reverse script, reverse errors)
   where
-    comparePatchOffsets (Patch _ o1 _) (Patch _ o2 _) = compare o1 o2
-    go :: (MonadState (Int, Patchscript Bytes, [Error Bytes], Patch Bytes) m) => [Patch Bytes] -> m ()
+    comparePatchOffsets (WithOffset o1 _ ) (WithOffset o2 _) = compare o1 o2
+    go
+        :: (MonadState (Int, PatchScript Bytes, [Error Bytes], Patch Bytes) m)
+        => [Patch Bytes]
+        -> m ()
     go [] = return ()
-    go (p@(Patch bs offset meta):ps) = do
+    go (p@(WithOffset offset edit) : ps) = do
         (cursor, script, errors, prevPatch) <- get
         case trySkipTo offset cursor of
           -- next offset is behind current cursor: overlapping patches
@@ -44,9 +47,8 @@ gen pList =
             put (cursor, script, errors', p)
             go ps
           Right skip -> do
-            let cursor' = cursor + skip + BS.length bs
-                o       = Overwrite bs meta
-            put (cursor', (skip, o):script, errors, p)
+            let cursor' = cursor + skip + BS.length (editData edit)
+            put (cursor', WithOffset skip edit : script, errors, p)
             go ps
     trySkipTo to from =
         let diff = to - from in if diff >= 0 then Right diff else Left (-diff)

@@ -1,10 +1,12 @@
 # bytepatch
-A CLI tool for patching byte-representable data in a bytestream. Write
-**patchscripts** (in-place edits to a file) using a convenient YAML format, and
-apply them with a safe patching algorithm. You choose how explicit to be: edits
-may be written as a simple `(offset, content)` tuple, or you can provide
-metadata regarding expected original data, so you know you're patching the right
-file.
+A Haskell library and CLI tool for patching byte-representable data in a
+bytestream. Write **patchscripts** (in-place edits to a file) using a convenient
+YAML format, and apply them with a safe patching algorithm. You choose how
+explicit to be: edits may be written as a simple `(offset, content)` tuple, or
+you can provide metadata regarding expected original data, so you know you're
+patching the right file.
+
+Intended as a general tool for making simple binary editing more manageable.
 
 ## What?
 If you're modifying binaries, you often end up needing to make edits in a hex
