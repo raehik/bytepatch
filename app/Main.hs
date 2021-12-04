@@ -19,6 +19,7 @@ import qualified Data.ByteString.Lazy                   as BL
 import qualified Data.Yaml                              as Yaml
 import           Data.Aeson                             ( FromJSON )
 
+import qualified Data.Text                              as Text
 import qualified Data.Text.Encoding                     as Text
 import           Data.Text                              ( Text )
 import           BytePatch.Core
@@ -50,12 +51,12 @@ run cfg = do
 -- hilarious little bit
 run' :: MonadIO m => Config -> m ()
 run' cfg = do
-    tryDecodeYaml @[Patch 'FwdSeek (Const ()) Text] (cfgPatchscript cfg) >>= \case
+    tryDecodeYaml @[Patch 'FwdSeek (Const ()) String] (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps -> do
-        d <- Text.decodeUtf8 <$> readStream' io
-        let d' = Patch.patchPureText ps d
-        writeStream' io $ Text.encodeUtf8 d'
+        d <- Text.unpack . Text.decodeUtf8 <$> readStream' io
+        let d' = Patch.patchListPure ps d
+        writeStream' io $ Text.encodeUtf8 $ Text.pack d'
   where
     io = cfgStreamInOut cfg
 

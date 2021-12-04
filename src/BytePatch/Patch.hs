@@ -24,7 +24,7 @@ module BytePatch.Patch
 
   -- * Prepared patchers
   , patchBinPure
-  , patchPureText
+  , patchListPure
 
   -- * General patchers
   , patchBin
@@ -49,6 +49,7 @@ import           System.IO                  ( Handle, SeekMode(..), hSeek )
 
 import qualified Data.Text                  as Text
 import           Data.Text                  ( Text )
+import qualified Data.List                  as List
 
 type Bytes = BS.ByteString
 
@@ -143,26 +144,27 @@ patchBinPure cfg ps bs =
           Left err -> Left err
           Right () -> Right $ BB.toLazyByteString bbPatched'
 
--- LMAO this is awesome. it's so useless and yet. beautiful
 patch
     :: (MonadFwdStream m, Chunk m ~ a)
     => [Patch 'FwdSeek (Const ()) a]
     -> m ()
 patch = mapM_ $ \(Patch d (Pos n (Const ()))) -> advance n >> overwrite d
 
-patchPureText :: [Patch 'FwdSeek (Const ()) Text] -> Text -> Text
-patchPureText ps a =
+patchListPure :: [Patch 'FwdSeek (Const ()) [a]] -> [a] -> [a]
+patchListPure ps a =
     let (aRemaining, aPatched) = execState (patch ps) (a, mempty)
      in aPatched <> aRemaining
 
-instance Monad m => MonadFwdStream (StateT (Text, Text) m) where
-    type Chunk (StateT (Text, Text) m) = Text
-    readahead n = Text.take (fromIntegral n) <$> gets fst
+-- Need MonoTraversable to define for Text, ByteString etc easily. Bleh. I think
+-- Snoyman's advice is to reimplement. Also bleh.
+instance Monad m => MonadFwdStream (StateT ([a], [a]) m) where
+    type Chunk (StateT ([a], [a]) m) = [a]
+    readahead n = List.take (fromIntegral n) <$> gets fst
     advance n = do
         (src, out) <- get
-        let (bs, src') = Text.splitAt (fromIntegral n) src
+        let (bs, src') = List.splitAt (fromIntegral n) src
         put (src', out <> bs)
     overwrite bs = do
         (src, out) <- get
-        let (_, src') = Text.splitAt (Text.length bs) src
+        let (_, src') = List.splitAt (List.length bs) src
         put (src', out <> bs)

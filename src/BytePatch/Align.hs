@@ -15,8 +15,8 @@ class Alignable t p d a where
 -- | Data relative to a given point. Aligned as in "with information on how to
 --   align".
 data Aligned a = Aligned
-  { alignedData  :: a
-  , alignedAlign :: SeekRep 'CursorSeek
+  { alignedAlign :: SeekRep 'CursorSeek
+  , alignedData  :: a
   } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
 data Meta d a = Meta
