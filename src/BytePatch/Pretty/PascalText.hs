@@ -9,7 +9,7 @@ decide the maximum bytesize of the string on creation.
 
 module BytePatch.Pretty.PascalText where
 
-import           BytePatch.Pretty.PatchRep
+import           BytePatch.PatchRep
 
 import qualified Data.Text.Encoding         as Text
 import           Data.Text                  ( Text )

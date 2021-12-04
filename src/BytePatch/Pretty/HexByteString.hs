@@ -11,7 +11,7 @@ module BytePatch.Pretty.HexByteString
   , prettyHexByteString
   ) where
 
-import           BytePatch.Pretty.PatchRep
+import           BytePatch.PatchRep
 
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Char       as MC

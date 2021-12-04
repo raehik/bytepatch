@@ -28,7 +28,7 @@ module BytePatch.Pretty
   ) where
 
 import           BytePatch.Core
-import           BytePatch.Pretty.PatchRep
+import           BytePatch.PatchRep
 
 import qualified Data.ByteString            as BS
 import           Data.Maybe                 ( fromMaybe )

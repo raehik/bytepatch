@@ -6,7 +6,7 @@ import           Config
 import qualified Options
 
 import           BytePatch.Pretty
-import           BytePatch.Pretty.PatchRep
+import           BytePatch.PatchRep
 import           BytePatch.JSON()
 import qualified BytePatch.Linear.Patch     as Linear
 import qualified BytePatch.Linear.Gen       as Linear
@@ -17,7 +17,6 @@ import qualified Data.ByteString.Lazy       as BL
 import qualified Data.Yaml                  as Yaml
 import           Data.Aeson                 ( FromJSON )
 
-import           Data.Text                  ( Text )
 import           BytePatch.Pretty.HexByteString
 
 main :: IO ()

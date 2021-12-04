@@ -1,4 +1,4 @@
-module BytePatch.Pretty.PatchRep where
+module BytePatch.PatchRep where
 
 import qualified Data.ByteString            as BS
 import qualified Data.Text.Encoding         as Text
