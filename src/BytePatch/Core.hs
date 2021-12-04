@@ -9,11 +9,11 @@ import GHC.Natural
 --
 -- The type of the seek value depends on its meaning: absolutely-located patches
 -- use 'Natural's, while cursor-based patches use 'Integer's.
-data Patch (s :: SeekKind) a = Patch (SeekRep s) (Edit a)
+data Patch (s :: SeekKind) m a = Patch (SeekRep s) (Edit m a)
     deriving (Generic, Functor, Foldable, Traversable)
 
-deriving instance (Eq (SeekRep s), Eq a) => Eq (Patch s a)
-deriving instance (Show (SeekRep s), Show a) => Show (Patch s a)
+deriving instance (Eq (SeekRep s), Eq (m a), Eq a) => Eq (Patch s m a)
+deriving instance (Show (SeekRep s), Show (m a), Show a) => Show (Patch s m a)
 
 -- | What a patch seek value means.
 data SeekKind
@@ -29,17 +29,7 @@ type family SeekRep (s :: SeekKind) where
     SeekRep 'AbsSeek    = Natural
 
 -- | Data to add to a stream.
-data Edit a = Edit
+data Edit m a = Edit
   { editData :: a
-  , editMeta :: EditMeta a
-  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
-
--- | Various optional metadata defining expected existing data for an 'Edit'.
-data EditMeta a = EditMeta
-  { emNullTerminates :: Maybe Int
-  -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
-
-  , emExpected       :: Maybe a
-  -- ^ Stream segment should be this.
-
+  , editMeta :: m a
   } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)

@@ -19,7 +19,6 @@ module BytePatch.Linear.Patch
   -- * Patch interface
     MonadFwdStream(..)
   , MonadCursorStream(..)
-  , Cfg(..)
   , Error(..)
 
   -- * Prepared patchers
@@ -31,16 +30,17 @@ module BytePatch.Linear.Patch
   ) where
 
 import           BytePatch.Core
-import           BytePatch.PatchRep
+import           BytePatch.Patch.Binary     ( BinRep(..) )
+import qualified BytePatch.Patch.Binary     as Bin
 
 import           GHC.Natural
 import           Data.Kind
-import qualified Data.ByteString         as BS
-import qualified Data.ByteString.Lazy    as BL
-import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString            as BS
+import qualified Data.ByteString.Lazy       as BL
+import qualified Data.ByteString.Builder    as BB
 import           Control.Monad.State
 import           Control.Monad.Reader
-import           System.IO               ( Handle, SeekMode(..), hSeek )
+import           System.IO                  ( Handle, SeekMode(..), hSeek )
 
 type Bytes = BS.ByteString
 
@@ -94,17 +94,6 @@ instance MonadIO m => MonadCursorStream (ReaderT Handle m) where
         hdl <- ask
         liftIO $ hSeek hdl RelativeSeek (fromIntegral n)
 
--- | Patch time config.
-data Cfg = Cfg
-  { cfgWarnIfLikelyReprocessing :: Bool
-  -- ^ If we determine that we're repatching an already-patched stream, continue
-  --   with a warning instead of failing.
-
-  , cfgAllowPartialExpected :: Bool
-  -- ^ If enabled, allow partial expected bytes checking. If disabled, then even
-  --   if the expected bytes are a prefix of the actual, fail.
-  } deriving (Eq, Show)
-
 -- | Errors encountered during patch time.
 data Error a
   = ErrorPatchOverlong
@@ -113,26 +102,69 @@ data Error a
   | ErrorPatchDataFailedToConvertToBytes a String -- TODO used for both data and expected
     deriving (Eq, Show)
 
+data ErrorBin a
+  = ErrorBin (Bin.Error a)
+  | ErrorBinPatchError (Error a)
+    deriving (Eq, Show)
+
 -- This is fun: there is minimal extra fuss in adding the patch representation
 -- stuff directly at patch time as well. I prefer doing as much as possible
--- before applying a patch, but no problem, @toPatchRep (_ :: Bytes) = id@.
+-- before applying a patch, but no problem, @toBinRep (_ :: Bytes) = id@.
 patchBytes
-    :: (PatchRep a, MonadFwdStream m, Chunk m ~ Bytes)
-    => Cfg -> [Patch 'FwdSeek a]
-    -> m (Maybe (Error a))
+    :: (BinRep a, MonadFwdStream m, Chunk m ~ Bytes)
+    => Bin.Cfg -> [Patch 'FwdSeek Bin.Meta a]
+    -> m (Maybe (ErrorBin a))
 patchBytes cfg = go
   where
-    go
-        :: (PatchRep a, MonadFwdStream m, Chunk m ~ Bytes)
-        => [Patch 'FwdSeek a]
-        -> m (Maybe (Error a))
     go [] = return Nothing
     go (Patch n (Edit ed meta):es) = do
-        case toPatchRep ed of
-          Left errPatchRep -> return $ Just $ ErrorPatchDataFailedToConvertToBytes ed errPatchRep
+        case toBinRep ed of
+          Left errBinRep ->
+            return $ Just $ ErrorBin $ Bin.ErrorBadBinRep ed errBinRep
           Right bs -> do
             advance n
             bsStream <- readahead $ fromIntegral $ BS.length bs -- TODO catch overlong error
+            case Bin.check cfg bsStream meta of
+              Just err -> return $ Just $ ErrorBin err
+              Nothing  -> overwrite bs >> go es
+
+-- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
+patchPure :: Bin.Cfg -> [Patch 'FwdSeek Bin.Meta Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
+patchPure cfg ps bs =
+    let (mErr, (bsRemaining, bbPatched)) = runState (patchBytes cfg ps) (bs, mempty)
+        bbPatched' = bbPatched <> BB.byteString bsRemaining
+     in case mErr of
+          Just err -> Left err
+          Nothing  -> Right $ BB.toLazyByteString bbPatched'
+
+{-
+The following would be nice:
+
+    patchDirect
+        :: (MonadFwdStream m, Chunk m ~ a) -- also need stuff like Eq a...
+        => Cfg -> [Patch 'FwdSeek a]
+        -> m (Maybe (Error a))
+
+But it would require a little more interface rethinking, because Cfg and patch
+meta store binary-specialized stuff.
+-}
+
+{-
+patchBytes'
+    :: (MonadFwdStream m, Chunk m ~ a, BinRep a, ) -- TODO how get length from a
+    => Bin.Cfg -> [Patch 'FwdSeek a]
+    -> m (Maybe _)
+patchBytes' cfg = go
+  where
+    go [] = return Nothing
+    go (Patch n (Edit ed meta):es) = do
+        advance n
+        bsStream <- readahead $ fromIntegral -- TODO catch overlong error
+        Bin.check cfg ed 
+        case toBinRep ed of
+          Left errBinRep ->
+            return $ Just $ ErrorPatchDataFailedToConvertToBytes ed errBinRep
+          Right bs -> do
 
             -- if provided, strip trailing nulls from to-overwrite bytestring
             case tryStripNulls bsStream (emNullTerminates meta) of
@@ -143,9 +175,9 @@ patchBytes cfg = go
                 case emExpected meta of
                   Nothing -> overwrite bs >> go es
                   Just expected ->
-                    case toPatchRep expected of
-                      Left errPatchRep ->
-                        return $ Just $ ErrorPatchDataFailedToConvertToBytes expected errPatchRep
+                    case toBinRep expected of
+                      Left errBinRep ->
+                        return $ Just $ ErrorPatchDataFailedToConvertToBytes expected errBinRep
                       Right expectedBs ->
                         case checkExpected bsStream' expectedBs of
                           Just (bsa, bse) ->
@@ -168,24 +200,4 @@ patchBytes cfg = go
           False -> if   bs == bsExpected
                    then Nothing
                    else Just (bs, bsExpected)
-
--- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
-patchPure :: Cfg -> [Patch 'FwdSeek Bytes] -> BS.ByteString -> Either (Error Bytes) BL.ByteString
-patchPure cfg ps bs =
-    let (mErr, (bsRemaining, bbPatched)) = runState (patchBytes cfg ps) (bs, mempty)
-        bbPatched' = bbPatched <> BB.byteString bsRemaining
-     in case mErr of
-          Just err -> Left err
-          Nothing  -> Right $ BB.toLazyByteString bbPatched'
-
-{-
-The following would be nice:
-
-    patchDirect
-        :: (MonadFwdStream m, Chunk m ~ a) -- also need stuff like Eq a...
-        => Cfg -> [Patch 'FwdSeek a]
-        -> m (Maybe (Error a))
-
-But it would require a little more interface rethinking, because Cfg and patch
-meta store binary-specialized stuff.
 -}

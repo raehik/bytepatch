@@ -33,7 +33,6 @@ library
       BytePatch.Linear.Gen
       BytePatch.Linear.Patch
       BytePatch.Patch.Binary
-      BytePatch.PatchRep
       BytePatch.Pretty
       BytePatch.Pretty.HexByteString
       BytePatch.Pretty.PascalText

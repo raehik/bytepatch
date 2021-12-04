@@ -11,7 +11,7 @@ module BytePatch.Pretty.HexByteString
   , prettyHexByteString
   ) where
 
-import           BytePatch.PatchRep
+import           BytePatch.Patch.Binary
 
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Char       as MC
@@ -30,8 +30,8 @@ newtype HexByteString = HexByteString { unHexByteString :: Bytes }
 instance Show HexByteString where
     show = Text.unpack . prettyHexByteString . unHexByteString
 
-instance PatchRep HexByteString where
-    toPatchRep = Right . unHexByteString
+instance BinRep HexByteString where
+    toBinRep = Right . unHexByteString
 
 -- | A hex bytestring looks like this: @00 01 89 8a   FEff@. You can mix and
 -- match capitalization and spacing, but I prefer to space each byte, full caps.

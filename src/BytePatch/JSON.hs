@@ -5,6 +5,7 @@
 module BytePatch.JSON where
 
 import           BytePatch.Core
+import qualified BytePatch.Patch.Binary         as Bin
 import qualified BytePatch.Pretty               as Pretty
 import           BytePatch.Pretty.HexByteString
 import           Data.Aeson
@@ -42,14 +43,14 @@ instance (ToJSON   (SeekRep s), ToJSON   a) => ToJSON   (Pretty.EditOffset s a) 
 instance (FromJSON (SeekRep s), FromJSON a) => FromJSON (Pretty.EditOffset s a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
 
-instance ToJSON   a => ToJSON   (EditMeta a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
-instance FromJSON a => FromJSON (EditMeta a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
+instance ToJSON   a => ToJSON   (Bin.Meta a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 1
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 1
+instance FromJSON a => FromJSON (Bin.Meta a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
 
-instance ToJSON   a => ToJSON   (Edit a) where
+instance (ToJSON   (m a), ToJSON   a) => ToJSON   (Edit m a) where
     toJSON     = genericToJSON     defaultOptions
     toEncoding = genericToEncoding defaultOptions
-instance FromJSON a => FromJSON (Edit a) where
+instance (FromJSON (m a), FromJSON a) => FromJSON (Edit m a) where
     parseJSON  = genericParseJSON  defaultOptions

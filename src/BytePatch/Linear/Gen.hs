@@ -12,12 +12,12 @@ import           GHC.Natural
 type Bytes = BS.ByteString
 
 -- | Error encountered during linear patchscript generation.
-data Error s a
-  = ErrorOverlap (Patch s a) (Patch s a)
+data Error s m a
+  = ErrorOverlap (Patch s m a) (Patch s m a)
   -- ^ Two edits wrote to the same offset.
 
-deriving instance (Eq (SeekRep s), Eq a) => Eq (Error s a)
-deriving instance (Show (SeekRep s), Show a) => Show (Error s a)
+deriving instance (Eq (SeekRep s), Eq (m a), Eq a) => Eq (Error s m a)
+deriving instance (Show (SeekRep s), Show (m a), Show a) => Show (Error s m a)
 
 -- | Process a list of patches into a linear patch script.
 --
@@ -27,8 +27,8 @@ deriving instance (Show (SeekRep s), Show a) => Show (Error s a)
 --
 --   * overlapping edit: later edit is skipped & overlapping edits reported
 gen
-    :: [Patch 'AbsSeek Bytes]
-    -> ([Patch 'FwdSeek Bytes], [Error 'AbsSeek Bytes])
+    :: [Patch 'AbsSeek m Bytes]
+    -> ([Patch 'FwdSeek m Bytes], [Error 'AbsSeek m Bytes])
 gen pList =
     let pList'                 = List.sortBy comparePatchOffsets pList
         (_, script, errors, _) = execState (go pList') (0, [], [], undefined)
@@ -37,10 +37,6 @@ gen pList =
      in (reverse script, reverse errors)
   where
     comparePatchOffsets (Patch o1 _) (Patch o2 _) = compare o1 o2
-    go
-        :: (MonadState (Natural, [Patch 'FwdSeek Bytes], [Error 'AbsSeek Bytes], Patch 'AbsSeek Bytes) m)
-        => [Patch 'AbsSeek Bytes]
-        -> m ()
     go [] = return ()
     go (p@(Patch offset edit) : ps) = do
         (cursor, script, errors, prevPatch) <- get

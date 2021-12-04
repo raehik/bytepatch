@@ -28,7 +28,8 @@ module BytePatch.Pretty
   ) where
 
 import           BytePatch.Core
-import           BytePatch.PatchRep
+import qualified BytePatch.Patch.Binary     as Bin
+import           BytePatch.Patch.Binary     ( BinRep(..) )
 
 import qualified Data.ByteString            as BS
 import           Data.Maybe                 ( fromMaybe )
@@ -69,7 +70,7 @@ data EditOffset (s :: SeekKind) a = EditOffset
   , eoMaxLength :: Maybe Natural
   -- ^ Maximum number of bytes allowed to write at this offset.
 
-  , eoEditMeta  :: Maybe (EditMeta a)
+  , eoEditMeta  :: Maybe (Bin.Meta a)
   -- ^ Optional apply time metadata for the edit at this offset.
 
   } deriving (Generic, Functor, Foldable, Traversable)
@@ -78,7 +79,7 @@ deriving instance (Eq (SeekRep s), Eq a) => Eq (EditOffset s a)
 deriving instance (Show (SeekRep s), Show a) => Show (EditOffset s a)
 
 -- | Normalize a list of 'CommonMultiEdits's, discarding everything on error.
-normalizeSimple :: PatchRep a => [CommonMultiEdits a] -> Maybe [Patch 'AbsSeek Bytes]
+normalizeSimple :: BinRep a => [CommonMultiEdits a] -> Maybe [Patch 'AbsSeek Bin.Meta Bytes]
 normalizeSimple cmess =
     let (p, errs) = listAlgebraConcatEtc . map applyBaseOffset $ cmess
      in case errs of
@@ -127,14 +128,14 @@ tryIntegerToNatural :: Integer -> Maybe Natural
 tryIntegerToNatural n | n < 0     = Nothing
                       | otherwise = Just $ naturalFromInteger n
 
-normalize :: PatchRep a => [MultiEdit 'AbsSeek a] -> Maybe [Patch 'AbsSeek Bytes]
+normalize :: BinRep a => [MultiEdit 'AbsSeek a] -> Maybe [Patch 'AbsSeek Bin.Meta Bytes]
 normalize xs = concat <$> mapM go xs
   where go (MultiEdit contents os) = mapM (tryMakeSingleReplace contents) os
 
 -- TODO now can error with "[expected] content has no valid patch rep"
-tryMakeSingleReplace :: PatchRep a => a -> EditOffset 'AbsSeek a -> Maybe (Patch 'AbsSeek Bytes)
+tryMakeSingleReplace :: BinRep a => a -> EditOffset 'AbsSeek a -> Maybe (Patch 'AbsSeek Bin.Meta Bytes)
 tryMakeSingleReplace contents (EditOffset os maos mMaxLen mMeta) =
-    case toPatchRep contents of
+    case toBinRep contents of
       Left errStr -> error errStr -- TODO
       Right bs ->
         if   offsetIsCorrect
@@ -143,12 +144,12 @@ tryMakeSingleReplace contents (EditOffset os maos mMaxLen mMeta) =
                Nothing     -> overwrite bs
         else Nothing
   where
-    overwrite bs = case traverse toPatchRep meta of
+    overwrite bs = case traverse toBinRep meta of
                      Left errStr -> error errStr -- TODO
                      Right meta' ->
                          Just $ Patch os $ Edit { editData = bs
                                                 , editMeta = meta' }
-    meta = fromMaybe (EditMeta Nothing Nothing) mMeta
+    meta = fromMaybe (Bin.Meta Nothing Nothing) mMeta
     offsetIsCorrect = case maos of Nothing  -> True
                                    Just aos -> os == aos
 

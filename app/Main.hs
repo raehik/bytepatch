@@ -6,7 +6,7 @@ import           Config
 import qualified Options
 
 import           BytePatch.Pretty
-import           BytePatch.PatchRep
+import           BytePatch.Patch.Binary     ( BinRep )
 import           BytePatch.JSON()
 import qualified BytePatch.Linear.Patch     as Linear
 import qualified BytePatch.Linear.Gen       as Linear
@@ -67,7 +67,7 @@ quit' msg a = liftIO $ do
 quit :: MonadIO m => String -> m ()
 quit = liftIO . putStrLn
 
-tryReadPatchscript :: forall a m. (PatchRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [CommonMultiEdits a])
+tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [CommonMultiEdits a])
 tryReadPatchscript = tryDecodeYaml
 
 tryDecodeYaml :: (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)

@@ -9,7 +9,7 @@ decide the maximum bytesize of the string on creation.
 
 module BytePatch.Pretty.PascalText where
 
-import           BytePatch.PatchRep
+import           BytePatch.Patch.Binary
 
 import qualified Data.Text.Encoding         as Text
 import           Data.Text                  ( Text )
@@ -20,8 +20,8 @@ import           Data.Bits
 
 newtype PascalText (n :: Nat) = PascalText { unPascalText :: Text }
 
-instance KnownNat n => PatchRep (PascalText n) where
-    toPatchRep t =
+instance KnownNat n => BinRep (PascalText n) where
+    toBinRep t =
         case encodePascalText t of
           Nothing -> Left "UTF-8 encoded text too long for length prefix field"
           Just bs -> Right bs

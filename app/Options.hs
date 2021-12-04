@@ -2,7 +2,7 @@ module Options ( parse ) where
 
 import           Config
 import           Options.Applicative
-import qualified BytePatch.Linear.Patch as Patch
+import qualified BytePatch.Patch.Binary as Bin
 import           Control.Monad.IO.Class
 
 parse :: MonadIO m => m Config
@@ -15,10 +15,9 @@ pConfig = Config
     <*> strArgument (metavar "PATCHSCRIPT" <> help "Path to patchscript")
     <*> pCStreamInOut
 
-pPatchCfg :: Parser Patch.Cfg
-pPatchCfg = Patch.Cfg <$> pAllowRepatch <*> pExpectExact
+pPatchCfg :: Parser Bin.Cfg
+pPatchCfg = Bin.Cfg <$> pExpectExact
   where
-    pAllowRepatch = switch $ long "allow-repatch" <> help "Override safety checks and only warn if it appears we're repatching a patched file (CURRENTLY NONFUNCTIONAL)"
     pExpectExact = flag True False $ long "expect-exact" <> help "When checking expected bytes, require an exact match (rather than the expected being a prefix of the actual)"
 
 pCStreamInOut :: Parser CStreamInOut
