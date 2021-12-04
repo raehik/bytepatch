@@ -4,8 +4,6 @@ import           BytePatch.Core
 
 import           GHC.Generics               ( Generic )
 import           GHC.Natural
-import           Data.Kind
-import           Data.Functor.Identity
 import           Optics
 import           Data.Generics.Product.Any
 
@@ -35,6 +33,9 @@ data Error
 
 instance Alignable Aligned Patch d a where
     align p = traverseOf (the @"patchPos") (alignPos (alignedAlign p)) (alignedData p)
+
+instance Alignable Aligned MultiPatch d a where
+    align p = traverseOf (the @"multiPatchPos") (traverse (alignPos (alignedAlign p))) (alignedData p)
 
 alignPos
     :: SeekRep 'CursorSeek

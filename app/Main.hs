@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Main ( main ) where
 
@@ -6,7 +7,6 @@ import           Config
 import qualified Options
 
 import qualified BytePatch.Patch                        as Patch
-import qualified BytePatch.Linear                       as Linear
 import qualified BytePatch.Patch.Binary                 as Bin
 import           BytePatch.Patch.Binary                 ( BinRep )
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
@@ -106,3 +106,9 @@ tryDecodeYaml fp = do
     case Yaml.decodeEither' bs of
       Left  err    -> liftIO (print err) >> return Nothing
       Right parsed -> return $ Just parsed
+
+showPatchFile :: forall a m. (FromJSON a, Show a, MonadIO m) => FilePath -> m ()
+showPatchFile fp = do
+    tryDecodeYaml @a fp >>= \case
+      Nothing -> quit "couldn't parse patchscript"
+      Just ps -> liftIO $ print ps

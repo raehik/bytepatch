@@ -1,10 +1,7 @@
 module Config where
 
-import qualified BytePatch.Patch.Binary as Bin
-
 data Config = Config
-  { cfgPatchCfg    :: Bin.Cfg
-  , cfgPatchscript :: FilePath
+  { cfgPatchscript :: FilePath
   , cfgStreamInOut :: CStreamInOut
   } deriving (Eq, Show)
 

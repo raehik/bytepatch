@@ -2,7 +2,7 @@ module Options ( parse ) where
 
 import           Config
 import           Options.Applicative
-import qualified BytePatch.Patch.Binary as Bin
+--import qualified BytePatch.Patch.Binary as Bin
 import           Control.Monad.IO.Class
 
 parse :: MonadIO m => m Config
@@ -11,14 +11,15 @@ parse = execParserWithDefaults desc pConfig
 
 pConfig :: Parser Config
 pConfig = Config
-    <$> pPatchCfg
-    <*> strArgument (metavar "PATCHSCRIPT" <> help "Path to patchscript")
+    <$> strArgument (metavar "PATCHSCRIPT" <> help "Path to patchscript")
     <*> pCStreamInOut
 
-pPatchCfg :: Parser Bin.Cfg
-pPatchCfg = Bin.Cfg <$> pExpectExact
+{-
+pBinPatchCfg :: Parser Bin.Cfg
+pBinPatchCfg = Bin.Cfg <$> pExpectExact
   where
     pExpectExact = flag True False $ long "expect-exact" <> help "When checking expected bytes, require an exact match (rather than the expected being a prefix of the actual)"
+-}
 
 pCStreamInOut :: Parser CStreamInOut
 pCStreamInOut = CStreamInOut <$> liftA2 (,) pCSIn pCSOut
