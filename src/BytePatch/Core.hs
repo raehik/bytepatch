@@ -9,8 +9,10 @@ import GHC.Natural
 --
 -- The type of the seek value depends on its meaning: absolutely-located patches
 -- use 'Natural's, while cursor-based patches use 'Integer's.
-data Patch (s :: SeekKind) m a = Patch (SeekRep s) (Edit m a)
-    deriving (Generic, Functor, Foldable, Traversable)
+data Patch (s :: SeekKind) m a = Patch
+  { patchSeek :: SeekRep s
+  , patchEdit :: Edit m a
+  } deriving (Generic, Functor, Foldable, Traversable)
 
 deriving instance (Eq (SeekRep s), Eq (m a), Eq a) => Eq (Patch s m a)
 deriving instance (Show (SeekRep s), Show (m a), Show a) => Show (Patch s m a)

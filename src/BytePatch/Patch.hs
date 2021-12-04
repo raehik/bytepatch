@@ -26,6 +26,7 @@ module BytePatch.Patch
 
   -- * Prepared patchers
   , patchBinPure
+  , patchPureText
 
   -- * General patchers
   , patchBin
@@ -46,6 +47,9 @@ import qualified Data.ByteString.Builder    as BB
 import           Control.Monad.State
 import           Control.Monad.Reader
 import           System.IO                  ( Handle, SeekMode(..), hSeek )
+
+import qualified Data.Text                  as Text
+import           Data.Text                  ( Text )
 
 type Bytes = BS.ByteString
 
@@ -145,3 +149,20 @@ patch
     => [Patch 'FwdSeek (Const ()) a]
     -> m ()
 patch = mapM_ $ \(Patch n (Edit d (Const ()))) -> advance n >> overwrite d
+
+patchPureText :: [Patch 'FwdSeek (Const ()) Text] -> Text -> Text
+patchPureText ps a =
+    let (aRemaining, aPatched) = execState (patch ps) (a, mempty)
+     in aPatched <> aRemaining
+
+instance Monad m => MonadFwdStream (StateT (Text, Text) m) where
+    type Chunk (StateT (Text, Text) m) = Text
+    readahead n = Text.take (fromIntegral n) <$> gets fst
+    advance n = do
+        (src, out) <- get
+        let (bs, src') = Text.splitAt (fromIntegral n) src
+        put (src', out <> bs)
+    overwrite bs = do
+        (src, out) <- get
+        let (_, src') = Text.splitAt (Text.length bs) src
+        put (src', out <> bs)

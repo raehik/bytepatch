@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main ( main ) where
@@ -18,13 +19,16 @@ import qualified Data.ByteString.Lazy                   as BL
 import qualified Data.Yaml                              as Yaml
 import           Data.Aeson                             ( FromJSON )
 
+import qualified Data.Text.Encoding                     as Text
+import           Data.Text                              ( Text )
+import           BytePatch.Core
+import           Data.Functor.Const
 
 main :: IO ()
 main = Options.parse >>= run
 
 run :: MonadIO m => Config -> m ()
 run cfg = do
-    return ()
     tryReadPatchscript @Bin.HexByteString (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps ->
@@ -38,6 +42,18 @@ run cfg = do
                 case Patch.patchBinPure (cfgPatchCfg cfg) ps' bs of
                   Left patchErr -> quit' "patching failed" patchErr
                   Right bs' -> writeStream' io (BL.toStrict bs')
+  where
+    io = cfgStreamInOut cfg
+
+-- hilarious little bit
+run' :: MonadIO m => Config -> m ()
+run' cfg = do
+    tryDecodeYaml @[Patch 'FwdSeek (Const ()) Text] (cfgPatchscript cfg) >>= \case
+      Nothing -> quit "couldn't parse patchscript"
+      Just ps -> do
+        d <- Text.decodeUtf8 <$> readStream' io
+        let d' = Patch.patchPureText ps d
+        writeStream' io $ Text.encodeUtf8 d'
   where
     io = cfgStreamInOut cfg
 

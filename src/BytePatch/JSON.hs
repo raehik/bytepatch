@@ -50,7 +50,13 @@ instance FromJSON a => FromJSON (Bin.Meta a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
 
 instance (ToJSON   (m a), ToJSON   a) => ToJSON   (Edit m a) where
-    toJSON     = genericToJSON     defaultOptions
-    toEncoding = genericToEncoding defaultOptions
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 4
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 4
 instance (FromJSON (m a), FromJSON a) => FromJSON (Edit m a) where
-    parseJSON  = genericParseJSON  defaultOptions
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 4
+
+instance (ToJSON   (SeekRep s), ToJSON   (m a), ToJSON   a) => ToJSON   (Patch s m a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 5
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 5
+instance (FromJSON (SeekRep s), FromJSON (m a), FromJSON a) => FromJSON (Patch s m a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 5
