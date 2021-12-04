@@ -62,7 +62,9 @@ run' cfg = do
 
 run'' :: MonadIO m => Config -> m ()
 run'' cfg = do
-    tryDecodeYaml @(Align.Aligned (Patch 'CursorSeek (Align.Meta Bin.Meta) Text)) (cfgPatchscript cfg) >>= \case
+    -- Align.Aligned (Patch 'CursorSeek (Align.Meta 'FwdSeek Bin.Meta) Text)
+    -- = "a text patch that aligns to forward-seek" (+ bin meta??)
+    tryDecodeYaml @(Align.Aligned (Patch 'CursorSeek (Align.Meta 'FwdSeek Bin.Meta) Text)) (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps ->
         case Align.align ps of

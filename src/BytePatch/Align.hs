@@ -9,8 +9,9 @@ import           Data.Generics.Product.Any
 
 class Alignable t p d a where
     align
-        :: t (p 'CursorSeek (Meta d) a)
-        -> Either Error (p 'AbsSeek d a)
+        :: SeekRep s ~ Natural
+        => t (p 'CursorSeek (Meta s d) a)
+        -> Either (Error s) (p s d a)
 
 -- | Data relative to a given point. Aligned as in "with information on how to
 --   align".
@@ -19,17 +20,23 @@ data Aligned a = Aligned
   , alignedData  :: a
   } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
-data Meta d a = Meta
-  { mExpected :: Maybe (SeekRep 'AbsSeek)
+data Meta s d a = Meta
+  { mExpected :: Maybe (SeekRep s)
   -- ^ Absolute stream offset for edit. Used for checking against actual offset.
 
   , mInner     :: d a
-  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
+  } deriving (Generic, Functor, Foldable, Traversable)
 
-data Error
+deriving instance (Eq (SeekRep s), Eq (d a), Eq a) => Eq (Meta s d a)
+deriving instance (Show (SeekRep s), Show (d a), Show a) => Show (Meta s d a)
+
+data Error s
   = ErrorSeekBelow0 (SeekRep 'CursorSeek)
-  | ErrorDoesntMatchExpected (SeekRep 'AbsSeek) (SeekRep 'AbsSeek) -- expected, then actual
-    deriving (Eq, Show, Generic)
+  | ErrorDoesntMatchExpected (SeekRep s) (SeekRep s) -- expected, then actual
+    deriving (Generic)
+
+deriving instance (Eq (SeekRep s)) => Eq (Error s)
+deriving instance (Show (SeekRep s)) => Show (Error s)
 
 instance Alignable Aligned Patch d a where
     align p = traverseOf (the @"patchPos") (alignPos (alignedAlign p)) (alignedData p)
@@ -37,10 +44,17 @@ instance Alignable Aligned Patch d a where
 instance Alignable Aligned MultiPatch d a where
     align p = traverseOf (the @"multiPatchPos") (traverse (alignPos (alignedAlign p))) (alignedData p)
 
+-- The signature here states "given a cursor seek and a cursor position, I can
+-- attempt to align the position to any Nat-like seek type". Indeed, the
+-- aligning process doesn't care what the type it writes into *means*, it just
+-- matters that it's stored as a Nat. Previously it used 'FwdSeek internally,
+-- and I would've have issues trying to align cursors positions to absolute
+-- positions (a valid request). Now, that's perfectly fine!
 alignPos
-    :: SeekRep 'CursorSeek
-    -> Pos 'CursorSeek (Meta d a)
-    -> Either Error (Pos 'AbsSeek (d a))
+    :: (SeekRep s ~ Natural)
+    => SeekRep 'CursorSeek
+    -> Pos 'CursorSeek (Meta s d a)
+    -> Either (Error s) (Pos s (d a))
 alignPos sBase (Pos s meta) =
     case tryIntegerToNatural sAligned of
       Nothing          -> Left $ ErrorSeekBelow0 sAligned
