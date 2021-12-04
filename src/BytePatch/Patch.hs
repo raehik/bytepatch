@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds, TypeFamilies #-}
-
 {- | Low-level patchscript processing and application.
 
 Patchscripts are applied as a list of @(skip x, write in-place y)@ commands. An
@@ -41,6 +39,7 @@ import qualified BytePatch.Patch.Binary     as Bin
 import           GHC.Natural
 import           Data.Kind
 import           Data.Functor.Const
+import           Data.Either.Combinators
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Builder    as BB
@@ -119,20 +118,21 @@ data ErrorBin a
 patchBin
     :: (BinRep a, MonadFwdStream m, Chunk m ~ Bytes)
     => Bin.Cfg -> [Patch 'FwdSeek Bin.Meta a]
-    -> m (Maybe (ErrorBin a))
+    -> m (Either (ErrorBin a) ())
 patchBin cfg = go
   where
-    go [] = return Nothing
+    go [] = return $ Right ()
     go (Patch ed (Pos n meta):es) = do
-        case toBinRep ed of
-          Left errBinRep ->
-            return $ Just $ ErrorBin $ Bin.ErrorBadBinRep ed errBinRep
+        -- TODO can't do the following -- probs just need @lift $ ...@ tho
+        --bs <- mapLeft ErrorBin $ Bin.binRep ed $ Bin.mMaxBytes meta
+        case mapLeft ErrorBin $ Bin.binRep ed $ Bin.mMaxBytes meta of
+          Left err -> return $ Left err
           Right bs -> do
             advance n
             bsStream <- readahead $ fromIntegral $ BS.length bs -- TODO catch overlong error
-            case Bin.check cfg bsStream meta of
-              Just err -> return $ Just $ ErrorBin err
-              Nothing  -> overwrite bs >> go es
+            case mapLeft ErrorBin $ Bin.check cfg bsStream meta of
+              Left err -> return $ Left err
+              Right () -> overwrite bs >> go es
 
 -- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
 patchBinPure :: Bin.Cfg -> [Patch 'FwdSeek Bin.Meta Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
@@ -140,8 +140,8 @@ patchBinPure cfg ps bs =
     let (mErr, (bsRemaining, bbPatched)) = runState (patchBin cfg ps) (bs, mempty)
         bbPatched' = bbPatched <> BB.byteString bsRemaining
      in case mErr of
-          Just err -> Left err
-          Nothing  -> Right $ BB.toLazyByteString bbPatched'
+          Left err -> Left err
+          Right () -> Right $ BB.toLazyByteString bbPatched'
 
 -- LMAO this is awesome. it's so useless and yet. beautiful
 patch

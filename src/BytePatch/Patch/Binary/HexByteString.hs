@@ -3,8 +3,6 @@ A 'Data.ByteString.ByteString' newtype wrapper indicating a human-readable
 bytestring, to be displayed in hex form (e.g. 00 12 AB FF).
 -}
 
-{-# LANGUAGE TypeFamilies #-}
-
 module BytePatch.Patch.Binary.HexByteString
   ( HexByteString(..)
   , parseHexByteString

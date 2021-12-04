@@ -31,11 +31,11 @@ library
       BytePatch.Core
       BytePatch.JSON
       BytePatch.Linear
+      BytePatch.Meta.Normalize
       BytePatch.Patch
       BytePatch.Patch.Binary
       BytePatch.Patch.Binary.HexByteString
       BytePatch.Patch.Binary.PascalText
-      BytePatch.Pretty
   other-modules:
       Paths_bytepatch
   hs-source-dirs:
@@ -60,14 +60,19 @@ library
       KindSignatures
       TypeOperators
       TypeApplications
+      DataKinds
+      TypeFamilies
+      UndecidableInstances
   build-depends:
       aeson >=1.5 && <2.1
     , base >=4.12 && <4.17
     , bytestring >=0.10 && <0.12
+    , either >=5.0.1.1 && <5.1
+    , generic-optics >=2.1 && <2.4
     , megaparsec >=9.0 && <9.3
-    , mtl ==2.2.*
+    , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
-    , text ==1.2.*
+    , text >=1.2.4.1 && <1.3
   default-language: Haskell2010
 
 executable bytepatch
@@ -98,17 +103,22 @@ executable bytepatch
       KindSignatures
       TypeOperators
       TypeApplications
+      DataKinds
+      TypeFamilies
+      UndecidableInstances
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson >=1.5 && <2.1
     , base >=4.12 && <4.17
     , bytepatch
     , bytestring >=0.10 && <0.12
+    , either >=5.0.1.1 && <5.1
+    , generic-optics >=2.1 && <2.4
     , megaparsec >=9.0 && <9.3
-    , mtl ==2.2.*
+    , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , optparse-applicative >=0.16.1 && <0.17
-    , text ==1.2.*
+    , text >=1.2.4.1 && <1.3
     , yaml >=0.11.7 && <0.12
   default-language: Haskell2010
 
@@ -141,6 +151,9 @@ test-suite spec
       KindSignatures
       TypeOperators
       TypeApplications
+      DataKinds
+      TypeFamilies
+      UndecidableInstances
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
@@ -148,9 +161,11 @@ test-suite spec
     , base >=4.12 && <4.17
     , bytepatch
     , bytestring >=0.10 && <0.12
+    , either >=5.0.1.1 && <5.1
+    , generic-optics >=2.1 && <2.4
     , hspec
     , megaparsec >=9.0 && <9.3
-    , mtl ==2.2.*
+    , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
-    , text ==1.2.*
+    , text >=1.2.4.1 && <1.3
   default-language: Haskell2010

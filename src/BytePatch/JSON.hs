@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 -- | Aeson instances for various types.
 module BytePatch.JSON where
@@ -7,18 +6,10 @@ module BytePatch.JSON where
 import           BytePatch.Core
 import qualified BytePatch.Patch.Binary                 as Bin
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import qualified BytePatch.Pretty                       as Pretty
+import           BytePatch.Meta.Normalize
 import           Data.Aeson
 import           Text.Megaparsec                        ( parseMaybe )
 import           Data.Void
-
-instance FromJSON Bin.HexByteString where
-    parseJSON = withText "hex bytestring" $ \t ->
-        case parseMaybe @Void Bin.parseHexByteString t of
-          Nothing -> fail "failed to parse hex bytestring (TODO)"
-          Just t' -> pure (Bin.HexByteString t')
-instance ToJSON   Bin.HexByteString where
-    toJSON = String . Bin.prettyHexByteString . Bin.unHexByteString
 
 jsonCfgCamelDrop :: Int -> Options
 jsonCfgCamelDrop x = defaultOptions
@@ -49,14 +40,22 @@ instance ToJSON   a => ToJSON   (Bin.Meta a) where
 instance FromJSON a => FromJSON (Bin.Meta a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
 
-instance ToJSON   a => ToJSON   (Pretty.BinMultiPatches a) where
+instance (ToJSON   (d a), ToJSON   a) => ToJSON   (NormalizedMultiPatches d a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 4
     toEncoding = genericToEncoding $ jsonCfgCamelDrop 4
-instance FromJSON a => FromJSON (Pretty.BinMultiPatches a) where
+instance (FromJSON (d a), FromJSON a) => FromJSON (NormalizedMultiPatches d a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 4
 
-instance (ToJSON   a) => ToJSON   (Pretty.Meta a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
-instance (FromJSON a) => FromJSON (Pretty.Meta a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
+instance (ToJSON   (d a), ToJSON   a) => ToJSON   (Normalized d a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 10
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 10
+instance (FromJSON (d a), FromJSON a) => FromJSON (Normalized d a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 10
+
+instance FromJSON Bin.HexByteString where
+    parseJSON = withText "hex bytestring" $ \t ->
+        case parseMaybe @Void Bin.parseHexByteString t of
+          Nothing -> fail "failed to parse hex bytestring (TODO)"
+          Just t' -> pure (Bin.HexByteString t')
+instance ToJSON   Bin.HexByteString where
+    toJSON = String . Bin.prettyHexByteString . Bin.unHexByteString

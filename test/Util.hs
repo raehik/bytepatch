@@ -1,5 +1,3 @@
-{-# LANGUAGE TypeFamilies #-}
-
 module Util where
 
 import           Text.Megaparsec

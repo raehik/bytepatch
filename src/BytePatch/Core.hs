@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds, TypeFamilies, UndecidableInstances #-}
-
 module BytePatch.Core where
 
 import GHC.Generics ( Generic )

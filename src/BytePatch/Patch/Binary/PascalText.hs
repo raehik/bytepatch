@@ -5,7 +5,7 @@ bytestring. The size of the length field is static. You essentially have to
 decide the maximum bytesize of the string on creation.
 -}
 
-{-# LANGUAGE DataKinds, ScopedTypeVariables#-}
+{-# LANGUAGE ScopedTypeVariables#-}
 
 module BytePatch.Patch.Binary.PascalText where
 

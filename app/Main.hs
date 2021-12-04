@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main ( main ) where
@@ -6,12 +5,13 @@ module Main ( main ) where
 import           Config
 import qualified Options
 
-import           BytePatch.Pretty
-import           BytePatch.Patch.Binary                 ( BinRep )
-import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import           BytePatch.JSON()
 import qualified BytePatch.Patch                        as Patch
 import qualified BytePatch.Linear                       as Linear
+import qualified BytePatch.Patch.Binary                 as Bin
+import           BytePatch.Patch.Binary                 ( BinRep )
+import qualified BytePatch.Patch.Binary.HexByteString   as Bin
+import           BytePatch.Meta.Normalize
+import           BytePatch.JSON()
 
 import           Control.Monad.IO.Class
 import qualified Data.ByteString                        as BS
@@ -27,6 +27,7 @@ import           Data.Functor.Const
 main :: IO ()
 main = Options.parse >>= run'
 
+{-
 run :: MonadIO m => Config -> m ()
 run cfg = do
     tryReadPatchscript @Bin.HexByteString (cfgPatchscript cfg) >>= \case
@@ -44,6 +45,7 @@ run cfg = do
                   Right bs' -> writeStream' io (BL.toStrict bs')
   where
     io = cfgStreamInOut cfg
+-}
 
 -- hilarious little bit
 run' :: MonadIO m => Config -> m ()
@@ -54,6 +56,17 @@ run' cfg = do
         d <- Text.decodeUtf8 <$> readStream' io
         let d' = Patch.patchPureText ps d
         writeStream' io $ Text.encodeUtf8 d'
+  where
+    io = cfgStreamInOut cfg
+
+run'' :: MonadIO m => Config -> m ()
+run'' cfg = do
+    tryDecodeYaml @[NormalizedMultiPatches Bin.Meta Bin.HexByteString] (cfgPatchscript cfg) >>= \case
+      Nothing -> quit "couldn't parse patchscript"
+      Just ps ->
+        case normalize ps of
+          Left  err -> quit' "couldn't normalize patchscript" err
+          Right ps' -> quit "TODO"
   where
     io = cfgStreamInOut cfg
 
@@ -83,7 +96,8 @@ quit' msg a = liftIO $ do
 quit :: MonadIO m => String -> m ()
 quit = liftIO . putStrLn
 
-tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [BinMultiPatches a])
+--tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [BinMultiPatches a])
+tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [MultiPatch 'AbsSeek Bin.Meta a])
 tryReadPatchscript = tryDecodeYaml
 
 tryDecodeYaml :: (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)

@@ -1,3 +1,9 @@
+Next refactorings:
+
+  * Pretty is just a thin layer over any meta that adds seek normalization.
+
+Later extensions:
+
   * QuickCheck tests (would be very fun!)
 
 Partly related:
