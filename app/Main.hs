@@ -10,7 +10,7 @@ import qualified BytePatch.Linear                       as Linear
 import qualified BytePatch.Patch.Binary                 as Bin
 import           BytePatch.Patch.Binary                 ( BinRep )
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import qualified BytePatch.Meta.Align                   as Meta
+import qualified BytePatch.Align                        as Align
 import           BytePatch.JSON()
 
 import           Control.Monad.IO.Class
@@ -61,11 +61,11 @@ run' cfg = do
 
 run'' :: MonadIO m => Config -> m ()
 run'' cfg = do
-    tryDecodeYaml @(Patch 'CursorSeek (Meta.Align Bin.Meta) Text) (cfgPatchscript cfg) >>= \case
+    tryDecodeYaml @(Align.Aligned (Patch 'CursorSeek (Align.Meta Bin.Meta) Text)) (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps ->
-        case Meta.align 2 ps of
-          Left  err -> quit' "couldn't normalize patchscript" err
+        case Align.align ps of
+          Left  err -> quit' "couldn't align patchscript" err
           Right ps' -> quit "TODO"
   where
     io = cfgStreamInOut cfg

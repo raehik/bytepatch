@@ -28,10 +28,10 @@ source-repository head
 
 library
   exposed-modules:
+      BytePatch.Align
       BytePatch.Core
       BytePatch.JSON
       BytePatch.Linear
-      BytePatch.Meta.Align
       BytePatch.Patch
       BytePatch.Patch.Binary
       BytePatch.Patch.Binary.HexByteString
