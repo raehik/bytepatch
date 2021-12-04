@@ -7,6 +7,7 @@ import qualified Options
 
 import           BytePatch.Pretty
 import           BytePatch.Patch.Binary     ( BinRep )
+import qualified BytePatch.Patch.Binary.HexByteString as Bin
 import           BytePatch.JSON()
 import qualified BytePatch.Linear.Patch     as Linear
 import qualified BytePatch.Linear.Gen       as Linear
@@ -17,7 +18,6 @@ import qualified Data.ByteString.Lazy       as BL
 import qualified Data.Yaml                  as Yaml
 import           Data.Aeson                 ( FromJSON )
 
-import           BytePatch.Pretty.HexByteString
 
 main :: IO ()
 main = Options.parse >>= run
@@ -25,7 +25,7 @@ main = Options.parse >>= run
 run :: MonadIO m => Config -> m ()
 run cfg = do
     return ()
-    tryReadPatchscript @HexByteString (cfgPatchscript cfg) >>= \case
+    tryReadPatchscript @Bin.HexByteString (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps ->
         case normalizeSimple ps of

@@ -1,3 +1,13 @@
+{-| Code for types which have a binary representation for patching.
+
+I try to stay highly generic, but this is primarily aimed at making changes to
+executables. Provided instances and some data decisions reflect that:
+
+  * 'Text' encodes to a null-terminated string.
+  * 'Meta' includes support for stripping a null bytestring suffix when testing
+    equality.
+-}
+
 module BytePatch.Patch.Binary
   ( BinRep(..)
   , Meta(..)
@@ -21,7 +31,7 @@ data Error a
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
 data Meta a = Meta
-  { mNullTerminates :: Maybe Int
+  { mNullTerminates :: Maybe Integer
   -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
 
   , mExpected       :: Maybe a
@@ -46,7 +56,7 @@ check cfg bs meta =
             case mNullTerminates meta of
               Nothing -> check' bs bsExpected
               Just nullsFrom ->
-                let (bs', bsNulls) = BS.splitAt nullsFrom bs
+                let (bs', bsNulls) = BS.splitAt (fromIntegral nullsFrom) bs
                  in if   bsNulls == BS.replicate (BS.length bsNulls) 0x00
                     then check' bs' bsExpected
                     else Just $ ErrorUnexpectedNonNull bs

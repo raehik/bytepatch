@@ -7,7 +7,7 @@ decide the maximum bytesize of the string on creation.
 
 {-# LANGUAGE DataKinds, ScopedTypeVariables#-}
 
-module BytePatch.Pretty.PascalText where
+module BytePatch.Patch.Binary.PascalText where
 
 import           BytePatch.Patch.Binary
 

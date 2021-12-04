@@ -5,7 +5,7 @@ bytestring, to be displayed in hex form (e.g. 00 12 AB FF).
 
 {-# LANGUAGE TypeFamilies #-}
 
-module BytePatch.Pretty.HexByteString
+module BytePatch.Patch.Binary.HexByteString
   ( HexByteString(..)
   , parseHexByteString
   , prettyHexByteString

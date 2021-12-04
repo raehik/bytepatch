@@ -5,20 +5,20 @@
 module BytePatch.JSON where
 
 import           BytePatch.Core
-import qualified BytePatch.Patch.Binary         as Bin
-import qualified BytePatch.Pretty               as Pretty
-import           BytePatch.Pretty.HexByteString
+import qualified BytePatch.Patch.Binary                 as Bin
+import qualified BytePatch.Patch.Binary.HexByteString   as Bin
+import qualified BytePatch.Pretty                       as Pretty
 import           Data.Aeson
 import           Text.Megaparsec
 import           Data.Void
 
-instance FromJSON HexByteString where
+instance FromJSON Bin.HexByteString where
     parseJSON = withText "hex bytestring" $ \t ->
-        case parseMaybe @Void parseHexByteString t of
+        case parseMaybe @Void Bin.parseHexByteString t of
           Nothing -> fail "failed to parse hex bytestring (TODO)"
-          Just t' -> pure (HexByteString t')
-instance ToJSON   HexByteString where
-    toJSON = String . prettyHexByteString . unHexByteString
+          Just t' -> pure (Bin.HexByteString t')
+instance ToJSON   Bin.HexByteString where
+    toJSON = String . Bin.prettyHexByteString . Bin.unHexByteString
 
 jsonCfgCamelDrop :: Int -> Options
 jsonCfgCamelDrop x = defaultOptions

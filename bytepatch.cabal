@@ -33,9 +33,9 @@ library
       BytePatch.Linear.Gen
       BytePatch.Linear.Patch
       BytePatch.Patch.Binary
+      BytePatch.Patch.Binary.HexByteString
+      BytePatch.Patch.Binary.PascalText
       BytePatch.Pretty
-      BytePatch.Pretty.HexByteString
-      BytePatch.Pretty.PascalText
   other-modules:
       Paths_bytepatch
   hs-source-dirs:
@@ -116,7 +116,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      BytePatch.Pretty.HexByteStringSpec
+      BytePatch.Patch.Binary.HexByteStringSpec
       Util
       Paths_bytepatch
   hs-source-dirs:

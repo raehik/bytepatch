@@ -1,6 +1,6 @@
-module BytePatch.Pretty.HexByteStringSpec ( spec ) where
+module BytePatch.Patch.Binary.HexByteStringSpec ( spec ) where
 
-import           BytePatch.Pretty.HexByteString
+import           BytePatch.Patch.Binary.HexByteString
 import           Test.Hspec
 import           Util
 
