@@ -5,17 +5,24 @@ module BytePatch.Core where
 import GHC.Generics ( Generic )
 import GHC.Natural
 
--- | A located edit to a stream of 'a'.
---
--- The type of the seek value depends on its meaning: absolutely-located patches
--- use 'Natural's, while cursor-based patches use 'Integer's.
-data Patch (s :: SeekKind) m a = Patch
-  { patchSeek :: SeekRep s
-  , patchEdit :: Edit m a
+-- | A located edit to a stream of 'a' with some metadata 'd'.
+data Patch (s :: SeekKind) d a = Patch
+  { patchData :: a
+  , patchPos  :: Pos s (d a)
   } deriving (Generic, Functor, Foldable, Traversable)
 
-deriving instance (Eq (SeekRep s), Eq (m a), Eq a) => Eq (Patch s m a)
-deriving instance (Show (SeekRep s), Show (m a), Show a) => Show (Patch s m a)
+deriving instance (Eq (SeekRep s), Eq (d a), Eq a) => Eq (Patch s d a)
+deriving instance (Show (SeekRep s), Show (d a), Show a) => Show (Patch s d a)
+
+-- The type of the seek value depends on its meaning: absolutely-located patches
+-- use 'Natural's, while cursor-based patches use 'Integer's.
+data Pos (s :: SeekKind) a = Pos
+  { posSeek :: SeekRep s
+  , posMeta :: a
+  } deriving (Generic, Functor, Foldable, Traversable)
+
+deriving instance (Eq (SeekRep s), Eq a) => Eq (Pos s a)
+deriving instance (Show (SeekRep s), Show a) => Show (Pos s a)
 
 -- | What a patch seek value means.
 data SeekKind
@@ -30,8 +37,11 @@ type family SeekRep (s :: SeekKind) where
     SeekRep 'CursorSeek = Integer
     SeekRep 'AbsSeek    = Natural
 
--- | Data to add to a stream.
-data Edit m a = Edit
-  { editData :: a
-  , editMeta :: m a
-  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
+-- | A single edit to multiple places in a stream of 'a' with some metadata 'd'.
+data MultiPatch (s :: SeekKind) d a = MultiPatch
+  { multiPatchData :: a
+  , multiPatchPos  :: [Pos s (d a)]
+  } deriving (Generic, Functor, Foldable, Traversable)
+
+deriving instance (Eq (SeekRep s), Eq (d a), Eq a) => Eq (MultiPatch s d a)
+deriving instance (Show (SeekRep s), Show (d a), Show a) => Show (MultiPatch s d a)

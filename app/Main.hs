@@ -25,7 +25,7 @@ import           BytePatch.Core
 import           Data.Functor.Const
 
 main :: IO ()
-main = Options.parse >>= run
+main = Options.parse >>= run'
 
 run :: MonadIO m => Config -> m ()
 run cfg = do
@@ -83,12 +83,12 @@ quit' msg a = liftIO $ do
 quit :: MonadIO m => String -> m ()
 quit = liftIO . putStrLn
 
-tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [CommonMultiEdits a])
+tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [BinMultiPatches a])
 tryReadPatchscript = tryDecodeYaml
 
 tryDecodeYaml :: (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)
 tryDecodeYaml fp = do
     bs <- liftIO $ BS.readFile fp
     case Yaml.decodeEither' bs of
-      Left  _      -> return Nothing
+      Left  err    -> liftIO (print err) >> return Nothing
       Right parsed -> return $ Just parsed

@@ -123,7 +123,7 @@ patchBin
 patchBin cfg = go
   where
     go [] = return Nothing
-    go (Patch n (Edit ed meta):es) = do
+    go (Patch ed (Pos n meta):es) = do
         case toBinRep ed of
           Left errBinRep ->
             return $ Just $ ErrorBin $ Bin.ErrorBadBinRep ed errBinRep
@@ -148,7 +148,7 @@ patch
     :: (MonadFwdStream m, Chunk m ~ a)
     => [Patch 'FwdSeek (Const ()) a]
     -> m ()
-patch = mapM_ $ \(Patch n (Edit d (Const ()))) -> advance n >> overwrite d
+patch = mapM_ $ \(Patch d (Pos n (Const ()))) -> advance n >> overwrite d
 
 patchPureText :: [Patch 'FwdSeek (Const ()) Text] -> Text -> Text
 patchPureText ps a =
