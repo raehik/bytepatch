@@ -10,7 +10,7 @@ import qualified BytePatch.Linear                       as Linear
 import qualified BytePatch.Patch.Binary                 as Bin
 import           BytePatch.Patch.Binary                 ( BinRep )
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import           BytePatch.Meta.Normalize
+import qualified BytePatch.Meta.Align                   as Meta
 import           BytePatch.JSON()
 
 import           Control.Monad.IO.Class
@@ -25,7 +25,7 @@ import           BytePatch.Core
 import           Data.Functor.Const
 
 main :: IO ()
-main = Options.parse >>= run'
+main = Options.parse >>= run''
 
 {-
 run :: MonadIO m => Config -> m ()
@@ -61,10 +61,10 @@ run' cfg = do
 
 run'' :: MonadIO m => Config -> m ()
 run'' cfg = do
-    tryDecodeYaml @[NormalizedMultiPatches Bin.Meta Bin.HexByteString] (cfgPatchscript cfg) >>= \case
+    tryDecodeYaml @(Patch 'CursorSeek (Meta.Align Bin.Meta) Text) (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps ->
-        case normalize ps of
+        case Meta.align 2 ps of
           Left  err -> quit' "couldn't normalize patchscript" err
           Right ps' -> quit "TODO"
   where
@@ -100,7 +100,7 @@ quit = liftIO . putStrLn
 tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [MultiPatch 'AbsSeek Bin.Meta a])
 tryReadPatchscript = tryDecodeYaml
 
-tryDecodeYaml :: (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)
+tryDecodeYaml :: forall a m. (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)
 tryDecodeYaml fp = do
     bs <- liftIO $ BS.readFile fp
     case Yaml.decodeEither' bs of

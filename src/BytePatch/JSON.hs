@@ -6,7 +6,7 @@ module BytePatch.JSON where
 import           BytePatch.Core
 import qualified BytePatch.Patch.Binary                 as Bin
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import           BytePatch.Meta.Normalize
+import qualified BytePatch.Meta.Align                   as Meta
 import           Data.Aeson
 import           Text.Megaparsec                        ( parseMaybe )
 import           Data.Void
@@ -40,17 +40,11 @@ instance ToJSON   a => ToJSON   (Bin.Meta a) where
 instance FromJSON a => FromJSON (Bin.Meta a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
 
-instance (ToJSON   (d a), ToJSON   a) => ToJSON   (NormalizedMultiPatches d a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 4
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 4
-instance (FromJSON (d a), FromJSON a) => FromJSON (NormalizedMultiPatches d a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 4
-
-instance (ToJSON   (d a), ToJSON   a) => ToJSON   (Normalized d a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 10
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 10
-instance (FromJSON (d a), FromJSON a) => FromJSON (Normalized d a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 10
+instance (ToJSON   (d a), ToJSON   a) => ToJSON   (Meta.Align d a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 5
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 5
+instance (FromJSON (d a), FromJSON a) => FromJSON (Meta.Align d a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 5
 
 instance FromJSON Bin.HexByteString where
     parseJSON = withText "hex bytestring" $ \t ->

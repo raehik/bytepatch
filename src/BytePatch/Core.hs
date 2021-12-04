@@ -43,3 +43,7 @@ data MultiPatch (s :: SeekKind) d a = MultiPatch
 
 deriving instance (Eq (SeekRep s), Eq (d a), Eq a) => Eq (MultiPatch s d a)
 deriving instance (Show (SeekRep s), Show (d a), Show a) => Show (MultiPatch s d a)
+
+expandMultiPatch :: MultiPatch s d a -> [Patch s d a]
+expandMultiPatch mp = map go (multiPatchPos mp)
+  where go pos = Patch (multiPatchData mp) pos

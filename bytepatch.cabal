@@ -31,7 +31,7 @@ library
       BytePatch.Core
       BytePatch.JSON
       BytePatch.Linear
-      BytePatch.Meta.Normalize
+      BytePatch.Meta.Align
       BytePatch.Patch
       BytePatch.Patch.Binary
       BytePatch.Patch.Binary.HexByteString
