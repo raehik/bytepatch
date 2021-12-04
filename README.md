@@ -1,4 +1,7 @@
 # bytepatch
+**TODO: Undergoing metamorphosis into a fun, highly parametric library. I intend
+to rename to streampatch or something, and split the CLI out.**
+
 A Haskell library and CLI tool for patching byte-representable data in a
 bytestream. Write **patchscripts** (in-place edits to a file) using a convenient
 YAML format, and apply them with a safe patching algorithm. You choose how
