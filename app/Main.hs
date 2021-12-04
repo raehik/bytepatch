@@ -6,17 +6,17 @@ import           Config
 import qualified Options
 
 import           BytePatch.Pretty
-import           BytePatch.Patch.Binary     ( BinRep )
-import qualified BytePatch.Patch.Binary.HexByteString as Bin
+import           BytePatch.Patch.Binary                 ( BinRep )
+import qualified BytePatch.Patch.Binary.HexByteString   as Bin
 import           BytePatch.JSON()
-import qualified BytePatch.Linear.Patch     as Linear
-import qualified BytePatch.Linear.Gen       as Linear
+import qualified BytePatch.Patch                        as Patch
+import qualified BytePatch.Linear                       as Linear
 
 import           Control.Monad.IO.Class
-import qualified Data.ByteString            as BS
-import qualified Data.ByteString.Lazy       as BL
-import qualified Data.Yaml                  as Yaml
-import           Data.Aeson                 ( FromJSON )
+import qualified Data.ByteString                        as BS
+import qualified Data.ByteString.Lazy                   as BL
+import qualified Data.Yaml                              as Yaml
+import           Data.Aeson                             ( FromJSON )
 
 
 main :: IO ()
@@ -35,7 +35,7 @@ run cfg = do
               (_, genErrs@(_:_)) -> quit' "patchscript generation failed" genErrs
               (ps', []) -> do
                 bs <- readStream' io
-                case Linear.patchPure (cfgPatchCfg cfg) ps' bs of
+                case Patch.patchBinPure (cfgPatchCfg cfg) ps' bs of
                   Left patchErr -> quit' "patching failed" patchErr
                   Right bs' -> writeStream' io (BL.toStrict bs')
   where

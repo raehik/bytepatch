@@ -30,8 +30,8 @@ library
   exposed-modules:
       BytePatch.Core
       BytePatch.JSON
-      BytePatch.Linear.Gen
-      BytePatch.Linear.Patch
+      BytePatch.Linear
+      BytePatch.Patch
       BytePatch.Patch.Binary
       BytePatch.Patch.Binary.HexByteString
       BytePatch.Patch.Binary.PascalText

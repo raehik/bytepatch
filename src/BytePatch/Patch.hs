@@ -12,9 +12,12 @@ enables writing patches in any form (e.g. UTF-8 text), which are then processed
 into an applicable patch by transforming edits into a concrete binary
 representation (e.g. null-terminated UTF-8 bytestring). See TODO module for
 more.
+
+TODO old docs. This is now heavily parameterized over patch and stream type, and
+things are split up into lots of modules.
 -}
 
-module BytePatch.Linear.Patch
+module BytePatch.Patch
   (
   -- * Patch interface
     MonadFwdStream(..)
@@ -22,10 +25,11 @@ module BytePatch.Linear.Patch
   , Error(..)
 
   -- * Prepared patchers
-  , patchPure
+  , patchBinPure
 
-  -- * General patcher
-  , patchBytes
+  -- * General patchers
+  , patchBin
+  , patch
 
   ) where
 
@@ -35,6 +39,7 @@ import qualified BytePatch.Patch.Binary     as Bin
 
 import           GHC.Natural
 import           Data.Kind
+import           Data.Functor.Const
 import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Lazy       as BL
 import qualified Data.ByteString.Builder    as BB
@@ -107,14 +112,11 @@ data ErrorBin a
   | ErrorBinPatchError (Error a)
     deriving (Eq, Show)
 
--- This is fun: there is minimal extra fuss in adding the patch representation
--- stuff directly at patch time as well. I prefer doing as much as possible
--- before applying a patch, but no problem, @toBinRep (_ :: Bytes) = id@.
-patchBytes
+patchBin
     :: (BinRep a, MonadFwdStream m, Chunk m ~ Bytes)
     => Bin.Cfg -> [Patch 'FwdSeek Bin.Meta a]
     -> m (Maybe (ErrorBin a))
-patchBytes cfg = go
+patchBin cfg = go
   where
     go [] = return Nothing
     go (Patch n (Edit ed meta):es) = do
@@ -129,75 +131,17 @@ patchBytes cfg = go
               Nothing  -> overwrite bs >> go es
 
 -- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
-patchPure :: Bin.Cfg -> [Patch 'FwdSeek Bin.Meta Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
-patchPure cfg ps bs =
-    let (mErr, (bsRemaining, bbPatched)) = runState (patchBytes cfg ps) (bs, mempty)
+patchBinPure :: Bin.Cfg -> [Patch 'FwdSeek Bin.Meta Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
+patchBinPure cfg ps bs =
+    let (mErr, (bsRemaining, bbPatched)) = runState (patchBin cfg ps) (bs, mempty)
         bbPatched' = bbPatched <> BB.byteString bsRemaining
      in case mErr of
           Just err -> Left err
           Nothing  -> Right $ BB.toLazyByteString bbPatched'
 
-{-
-The following would be nice:
-
-    patchDirect
-        :: (MonadFwdStream m, Chunk m ~ a) -- also need stuff like Eq a...
-        => Cfg -> [Patch 'FwdSeek a]
-        -> m (Maybe (Error a))
-
-But it would require a little more interface rethinking, because Cfg and patch
-meta store binary-specialized stuff.
--}
-
-{-
-patchBytes'
-    :: (MonadFwdStream m, Chunk m ~ a, BinRep a, ) -- TODO how get length from a
-    => Bin.Cfg -> [Patch 'FwdSeek a]
-    -> m (Maybe _)
-patchBytes' cfg = go
-  where
-    go [] = return Nothing
-    go (Patch n (Edit ed meta):es) = do
-        advance n
-        bsStream <- readahead $ fromIntegral -- TODO catch overlong error
-        Bin.check cfg ed 
-        case toBinRep ed of
-          Left errBinRep ->
-            return $ Just $ ErrorPatchDataFailedToConvertToBytes ed errBinRep
-          Right bs -> do
-
-            -- if provided, strip trailing nulls from to-overwrite bytestring
-            case tryStripNulls bsStream (emNullTerminates meta) of
-              Nothing -> return $ Just ErrorPatchUnexpectedNonnull
-              Just bsStream' -> do
-
-                -- if provided, check the to-overwrite bytestring matches expected
-                case emExpected meta of
-                  Nothing -> overwrite bs >> go es
-                  Just expected ->
-                    case toBinRep expected of
-                      Left errBinRep ->
-                        return $ Just $ ErrorPatchDataFailedToConvertToBytes expected errBinRep
-                      Right expectedBs ->
-                        case checkExpected bsStream' expectedBs of
-                          Just (bsa, bse) ->
-                            return $ Just $ ErrorPatchDidNotMatchExpected bsa bse
-                          Nothing -> overwrite bs >> go es
-
-    tryStripNulls bs = \case
-      Nothing        -> Just bs
-      Just nullsFrom ->
-        let (bs', bsNulls) = BS.splitAt nullsFrom bs
-         in if   bsNulls == BS.replicate (BS.length bsNulls) 0x00
-            then Just bs'
-            else Nothing
-
-    checkExpected bs bsExpected =
-        case cfgAllowPartialExpected cfg of
-          True  -> if   BS.isPrefixOf bs bsExpected
-                   then Nothing
-                   else Just (bs, bsExpected)
-          False -> if   bs == bsExpected
-                   then Nothing
-                   else Just (bs, bsExpected)
--}
+-- LMAO this is awesome. it's so useless and yet. beautiful
+patch
+    :: (MonadFwdStream m, Chunk m ~ a)
+    => [Patch 'FwdSeek (Const ()) a]
+    -> m ()
+patch = mapM_ $ \(Patch n (Edit d (Const ()))) -> advance n >> overwrite d

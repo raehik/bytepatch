@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds, TypeFamilies, UndecidableInstances #-}
 
-module BytePatch.Linear.Gen (gen, Error(..)) where
+module BytePatch.Linear (gen, Error(..)) where
 
 import           BytePatch.Core
 
