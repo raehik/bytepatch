@@ -127,8 +127,8 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       BytePatch.AlignSpec
+      BytePatch.ApplySpec
       BytePatch.Patch.Binary.HexByteStringSpec
-      BytePatch.PatchSpec
       Util
       Paths_bytepatch
   hs-source-dirs:
@@ -159,7 +159,8 @@ test-suite spec
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:
-      aeson >=1.5 && <2.1
+      QuickCheck
+    , aeson >=1.5 && <2.1
     , base >=4.12 && <4.17
     , bytepatch
     , bytestring >=0.10 && <0.12

@@ -81,4 +81,5 @@ tests:
     dependencies:
     - bytepatch
     - hspec
+    - QuickCheck
 

@@ -4,7 +4,7 @@ import           BytePatch.Align
 import           Test.Hspec
 import           Util
 
-import           BytePatch.Core
+import           BytePatch.Patch
 import           Data.Functor.Const
 import           GHC.Natural
 
