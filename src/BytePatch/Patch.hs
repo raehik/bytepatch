@@ -28,16 +28,16 @@ deriving instance (Show (SeekRep s), Show a) => Show (Pos s a)
 
 -- | What a patch seek value means.
 data SeekKind
-  = FwdSeek    -- ^ seeks only move cursor forward
-  | CursorSeek -- ^ seeks move cursor forward or backward
-  | AbsSeek    -- ^ seeks specify an exact offset in stream
+  = FwdSeek -- ^ seeks only move cursor forward
+  | RelSeek -- ^ seeks are relative e.g. to a universal base, or a stream cursor
+  | AbsSeek -- ^ seeks specify an exact offset in stream
     deriving (Eq, Show, Generic)
 
 -- | Get the representation for a 'SeekKind'.
 type family SeekRep (s :: SeekKind) where
-    SeekRep 'FwdSeek    = Natural
-    SeekRep 'CursorSeek = Integer
-    SeekRep 'AbsSeek    = Natural
+    SeekRep 'FwdSeek = Natural
+    SeekRep 'RelSeek = Integer
+    SeekRep 'AbsSeek = Natural
 
 -- | A single edit to multiple places in a stream of 'a' with some metadata 'd'.
 data MultiPatch (s :: SeekKind) d a = MultiPatch
