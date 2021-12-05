@@ -4,7 +4,7 @@ Essentially a layer on top of a patch type that can be stripped off with 'align'
 (or 'alignList').
 -}
 
-module BytePatch.Align where
+module BytePatch.Patch.Align where
 
 import           BytePatch.Patch
 

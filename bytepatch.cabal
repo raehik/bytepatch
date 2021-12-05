@@ -28,11 +28,11 @@ source-repository head
 
 library
   exposed-modules:
-      BytePatch.Align
       BytePatch.Apply
       BytePatch.JSON
       BytePatch.Linear
       BytePatch.Patch
+      BytePatch.Patch.Align
       BytePatch.Patch.Binary
       BytePatch.Patch.Binary.HexByteString
       BytePatch.Patch.Binary.PascalText
@@ -126,8 +126,8 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      BytePatch.AlignSpec
       BytePatch.ApplySpec
+      BytePatch.Patch.AlignSpec
       BytePatch.Patch.Binary.HexByteStringSpec
       Util
       Paths_bytepatch

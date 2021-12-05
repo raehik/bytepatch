@@ -1,6 +1,6 @@
-module BytePatch.AlignSpec ( spec ) where
+module BytePatch.Patch.AlignSpec ( spec ) where
 
-import           BytePatch.Align
+import           BytePatch.Patch.Align
 import           Test.Hspec
 import           Util
 

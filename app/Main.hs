@@ -10,7 +10,7 @@ import qualified BytePatch.Apply                        as Apply
 import qualified BytePatch.Patch.Binary                 as Bin
 import           BytePatch.Patch.Binary                 ( BinRep )
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import qualified BytePatch.Align                        as Align
+import qualified BytePatch.Patch.Align                  as Align
 import           BytePatch.JSON()
 
 import           Control.Monad.IO.Class

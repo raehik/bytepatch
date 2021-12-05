@@ -6,7 +6,7 @@ module BytePatch.JSON where
 import           BytePatch.Patch
 import qualified BytePatch.Patch.Binary                 as Bin
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
-import qualified BytePatch.Align                        as Align
+import qualified BytePatch.Patch.Align                  as Align
 import           Data.Aeson
 import           Text.Megaparsec                        ( parseMaybe )
 import           Data.Void
