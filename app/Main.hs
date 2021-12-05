@@ -6,7 +6,7 @@ module Main ( main ) where
 import           Config
 import qualified Options
 
-import qualified BytePatch.Patch                        as Patch
+import qualified BytePatch.Apply                        as Apply
 import qualified BytePatch.Patch.Binary                 as Bin
 import           BytePatch.Patch.Binary                 ( BinRep )
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
@@ -22,7 +22,7 @@ import           Data.Aeson                             ( FromJSON )
 import qualified Data.Text                              as Text
 import qualified Data.Text.Encoding                     as Text
 import           Data.Text                              ( Text )
-import           BytePatch.Core
+import           BytePatch.Patch
 import           Data.Functor.Const
 
 main :: IO ()
@@ -55,7 +55,7 @@ run' cfg = do
       Nothing -> quit "couldn't parse patchscript"
       Just ps -> do
         d <- Text.unpack . Text.decodeUtf8 <$> readStream' io
-        let d' = Patch.patchListPure ps d
+        let d' = Apply.patchListPure ps d
         writeStream' io $ Text.encodeUtf8 $ Text.pack d'
   where
     io = cfgStreamInOut cfg

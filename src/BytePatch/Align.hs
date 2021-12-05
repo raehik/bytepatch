@@ -1,6 +1,6 @@
 module BytePatch.Align where
 
-import           BytePatch.Core
+import           BytePatch.Patch
 
 import           GHC.Generics               ( Generic )
 import           GHC.Natural

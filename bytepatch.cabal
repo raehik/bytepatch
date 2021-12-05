@@ -29,7 +29,7 @@ source-repository head
 library
   exposed-modules:
       BytePatch.Align
-      BytePatch.Core
+      BytePatch.Apply
       BytePatch.JSON
       BytePatch.Linear
       BytePatch.Patch

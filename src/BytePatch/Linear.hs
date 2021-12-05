@@ -1,6 +1,6 @@
 module BytePatch.Linear (gen, Error(..)) where
 
-import           BytePatch.Core
+import           BytePatch.Patch
 
 import qualified Data.ByteString        as BS
 import           Control.Monad.State

@@ -3,7 +3,7 @@
 -- | Aeson instances for various types.
 module BytePatch.JSON where
 
-import           BytePatch.Core
+import           BytePatch.Patch
 import qualified BytePatch.Patch.Binary                 as Bin
 import qualified BytePatch.Patch.Binary.HexByteString   as Bin
 import qualified BytePatch.Align                        as Align
