@@ -30,12 +30,12 @@ library
   exposed-modules:
       BytePatch.Apply
       BytePatch.JSON
-      BytePatch.Linear
       BytePatch.Patch
       BytePatch.Patch.Align
       BytePatch.Patch.Binary
       BytePatch.Patch.Binary.HexByteString
       BytePatch.Patch.Binary.PascalText
+      BytePatch.Patch.Linearize
   other-modules:
       Paths_bytepatch
   hs-source-dirs:
@@ -129,6 +129,7 @@ test-suite spec
       BytePatch.ApplySpec
       BytePatch.Patch.AlignSpec
       BytePatch.Patch.Binary.HexByteStringSpec
+      BytePatch.Patch.CombinedSpec
       Util
       Paths_bytepatch
   hs-source-dirs:

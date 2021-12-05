@@ -1,3 +1,11 @@
+Refactoring to streampatch:
+
+  * redo Linear. Don't try to recover, just `Either Error a` it. It should work
+    on all types that have you can 'length' on.
+  * consider splitting out some of the binary stuff from Apply? If possible.
+    Though I'll still need stream patchers for binary. Maybe keep it with Binary
+    modules instead. Binary.Patch, Binary.Apply? hmm.
+
 Later extensions:
 
   * QuickCheck tests (would be very fun!)

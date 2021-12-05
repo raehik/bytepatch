@@ -1,7 +1,7 @@
-{-| Relative-seeking patch types that can be re-aligned to a new 0.
+{-| Relative-seeking patches that can be re-aligned to a new 0.
 
-Essentially a layer on top of a patch type that can be stripped off with 'align'
-(or 'alignList').
+Essentially a layer on top of a patch that can be stripped off with 'align' (or
+'alignList').
 -}
 
 module BytePatch.Patch.Align where

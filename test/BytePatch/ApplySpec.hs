@@ -1,6 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
-module BytePatch.ApplySpec {- ( spec ) -} where
+module BytePatch.ApplySpec ( spec ) where
 
 import           BytePatch.Apply
 import           Test.Hspec
@@ -52,8 +50,3 @@ genPatchList = skip []
 genBoundList :: Arbitrary a => Natural -> Natural -> Gen [a]
 genBoundList x y =
     arbitrary `suchThat` \l -> fromIntegral (length l) <= x && fromIntegral (length l) >= y
-
--- TODO this is in quickcheck-instances
-instance Arbitrary Natural where
-  arbitrary = arbitrarySizedNatural
-  shrink    = shrinkIntegral

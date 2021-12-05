@@ -1,4 +1,4 @@
--- | Core patch type definitions: patches, positions, seek kinds.
+-- | Core patch type definitions: patches, seeks, metadata.
 
 module BytePatch.Patch where
 
