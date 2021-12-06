@@ -28,8 +28,7 @@ import qualified Data.ByteString    as BS
 import qualified Data.Text.Encoding as Text
 import qualified Data.Text          as Text
 import           Data.Text          ( Text )
-import           Optics
-import           Data.Generics.Product.Any
+import           Data.Either.Combinators
 
 type Bytes = BS.ByteString
 
@@ -75,9 +74,6 @@ data Error a
 -- well. Oh God, I'm going to have to redesign Patch to split meta into convert
 -- time and apply time, aren't I...
 --
--- Ah shit. We can't tell where the error was with traverse (and we have to
--- traverse to binrep the meta). Maybe there's a better thing to do.
---
 -- Also, we traverse the WHOLE meta. Not just the binary. That should be clear,
 -- but yeah. A lot of work gets done in @traverse toBinRep@.
 patchBinRep
@@ -85,8 +81,8 @@ patchBinRep
     => Patch s (Meta d) a
     -> Either (Error a) (Patch s (Meta d) Bytes)
 patchBinRep p =
-    case traverse toBinRep p of
-      Left err -> Left $ ErrorBadBinRep undefined err
+    case traverse (\a -> mapLeft (\err -> (err, a)) $ toBinRep a) p of
+      Left (err, a) -> Left $ ErrorBadBinRep a err
       Right p' -> Right p'
 
 binRep :: BinRep a => a -> Maybe Natural -> Either (Error a) Bytes
