@@ -130,7 +130,7 @@ data ErrorBin a
 
 patchBin
     :: (BinRep a, MonadFwdStream m, Chunk m ~ Bytes)
-    => Bin.Cfg -> [Patch 'FwdSeek Bin.Meta a]
+    => Bin.Cfg -> [Patch 'FwdSeek (Bin.Meta (Const ())) a]
     -> m (Either (ErrorBin a) ())
 patchBin cfg = go
   where
@@ -148,7 +148,7 @@ patchBin cfg = go
               Right () -> overwrite bs >> go es
 
 -- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
-patchBinPure :: Bin.Cfg -> [Patch 'FwdSeek Bin.Meta Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
+patchBinPure :: Bin.Cfg -> [Patch 'FwdSeek (Bin.Meta (Const ())) Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
 patchBinPure cfg ps bs =
     let (mErr, (bsRemaining, bbPatched)) = runState (patchBin cfg ps) (bs, mempty)
         bbPatched' = bbPatched <> BB.byteString bsRemaining

@@ -130,6 +130,7 @@ test-suite spec
       BytePatch.Patch.AlignSpec
       BytePatch.Patch.Binary.HexByteStringSpec
       BytePatch.Patch.CombinedSpec
+      BytePatch.Patch.LinearizeSpec
       Util
       Paths_bytepatch
   hs-source-dirs:

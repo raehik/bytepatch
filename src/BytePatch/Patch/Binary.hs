@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 {-| Code for types which have a binary representation for patching.
 
 I try to stay highly generic, but this is primarily aimed at making changes to
@@ -15,36 +17,45 @@ module BytePatch.Patch.Binary
   , Error(..)
   , check
   , binRep
+  , patchBinRep
   ) where
+
+import           BytePatch.Patch
 
 import           GHC.Generics       ( Generic )
 import           GHC.Natural
 import qualified Data.ByteString    as BS
 import qualified Data.Text.Encoding as Text
+import qualified Data.Text          as Text
 import           Data.Text          ( Text )
+import           Optics
+import           Data.Generics.Product.Any
 
 type Bytes = BS.ByteString
 
--- Conversion checks are done when the type is converted to its binary
--- representation. This is enforced at patch time, but may also be done before
--- patching for safety (in which case the conversion at patch time is 'id').
--- Patch checks use stream data, so must be run at patch time.
-data Meta a = Meta
-  { mNullTerminates :: Maybe Integer
+{-
+TODO for better typing split into
+    MetaConvert mMaxBs mMetaApply
+    MetaApply mNullTerm mExp mInner
+but it might be too unwieldy.
+-}
+data Meta d a = Meta
+  { mNullTerminates :: Maybe (SeekRep 'FwdSeek)
   -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
   --
-  -- Patch check.
+  -- TODO patch check
 
   , mExpected       :: Maybe a
   -- ^ Stream segment should be this.
   --
-  -- Patch check.
+  -- TODO patch check
 
-  , mMaxBytes       :: Maybe Natural
+  , mMaxBytes       :: Maybe (SeekRep 'FwdSeek)
   -- ^ Maximum number of bytes permitted to write at the associated position.
   --
-  -- Conversion check.
+  -- TODO conversion check
 
+  , mInner          :: d a
   } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
 data Cfg = Cfg
@@ -60,6 +71,24 @@ data Error a
   | ErrorBinRepTooLong Bytes Natural
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
+-- Note that we don't strip meta, because it holds apply time information as
+-- well. Oh God, I'm going to have to redesign Patch to split meta into convert
+-- time and apply time, aren't I...
+--
+-- Ah shit. We can't tell where the error was with traverse (and we have to
+-- traverse to binrep the meta). Maybe there's a better thing to do.
+--
+-- Also, we traverse the WHOLE meta. Not just the binary. That should be clear,
+-- but yeah. A lot of work gets done in @traverse toBinRep@.
+patchBinRep
+    :: (BinRep a, Traversable d)
+    => Patch s (Meta d) a
+    -> Either (Error a) (Patch s (Meta d) Bytes)
+patchBinRep p =
+    case traverse toBinRep p of
+      Left err -> Left $ ErrorBadBinRep undefined err
+      Right p' -> Right p'
+
 binRep :: BinRep a => a -> Maybe Natural -> Either (Error a) Bytes
 binRep a mN =
     case toBinRep a of
@@ -72,7 +101,7 @@ binRep a mN =
             then Left $ ErrorBinRepTooLong bs n
             else Right bs
 
-check :: BinRep a => Cfg -> Bytes -> Meta a -> Either (Error a) ()
+check :: BinRep a => Cfg -> Bytes -> Meta d a -> Either (Error a) ()
 check cfg bs meta = do
     case mExpected meta of
       Nothing -> Right ()
@@ -119,3 +148,7 @@ instance BinRep BS.ByteString where
 -- | Text is converted to UTF-8 bytes and null-terminated.
 instance BinRep Text where
     toBinRep = Right . flip BS.snoc 0x00 . Text.encodeUtf8
+
+-- | String is the same but goes the long way round, through Text.
+instance BinRep String where
+    toBinRep = toBinRep . Text.pack

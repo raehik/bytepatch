@@ -1,7 +1,11 @@
 Refactoring to streampatch:
 
-  * redo Linear. Don't try to recover, just `Either Error a` it. It should work
-    on all types that have you can 'length' on.
+  * Can I split meta into convert time & apply time meta? Or perhaps the
+    "bottom" layer is apply time meta (though I don't see how that would work
+    easily).
+    * Align is a convert-only layer. Binary is both.
+    * Convert time meta is ignored during apply time.
+    * Apply time meta is probably ignored during convert time?
   * consider splitting out some of the binary stuff from Apply? If possible.
     Though I'll still need stream patchers for binary. Maybe keep it with Binary
     modules instead. Binary.Patch, Binary.Apply? hmm.

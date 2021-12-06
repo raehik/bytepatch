@@ -64,7 +64,7 @@ run'' :: MonadIO m => Config -> m ()
 run'' cfg = do
     -- Align.Aligned (Patch 'RelSeek (Align.Meta 'FwdSeek Bin.Meta) Text)
     -- = "a text patch that aligns to forward-seek" (+ bin meta??)
-    tryDecodeYaml @(Align.Aligned (Patch 'RelSeek (Align.Meta 'FwdSeek Bin.Meta) Text)) (cfgPatchscript cfg) >>= \case
+    tryDecodeYaml @(Align.Aligned (Patch 'RelSeek (Align.Meta 'FwdSeek (Bin.Meta (Const ()))) Text)) (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps ->
         case Align.align ps of
@@ -100,7 +100,7 @@ quit :: MonadIO m => String -> m ()
 quit = liftIO . putStrLn
 
 --tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [BinMultiPatches a])
-tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [MultiPatch 'AbsSeek Bin.Meta a])
+tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [MultiPatch 'AbsSeek (Bin.Meta (Const ())) a])
 tryReadPatchscript = tryDecodeYaml
 
 tryDecodeYaml :: forall a m. (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)

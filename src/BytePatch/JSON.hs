@@ -34,10 +34,10 @@ instance (ToJSON   (SeekRep s), ToJSON   (d a), ToJSON   a) => ToJSON   (MultiPa
 instance (FromJSON (SeekRep s), FromJSON (d a), FromJSON a) => FromJSON (MultiPatch s d a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 10
 
-instance ToJSON   a => ToJSON   (Bin.Meta a) where
+instance (ToJSON   (d a), ToJSON   a) => ToJSON   (Bin.Meta d a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 1
     toEncoding = genericToEncoding $ jsonCfgCamelDrop 1
-instance FromJSON a => FromJSON (Bin.Meta a) where
+instance (FromJSON (d a), FromJSON a) => FromJSON (Bin.Meta d a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
 
 instance (ToJSON   a) => ToJSON   (Align.Aligned a) where

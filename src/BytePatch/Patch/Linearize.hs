@@ -13,38 +13,45 @@ import qualified Data.Text              as Text
 import           Data.Text              ( Text )
 
 class HasLength a where
-    getLength' :: a -> Natural
+    getLength :: a -> Natural
 
 instance HasLength BS.ByteString where
-    getLength' = fromIntegral . BS.length
+    getLength = fromIntegral . BS.length
 instance HasLength Text where
-    getLength' = fromIntegral . Text.length
+    getLength = fromIntegral . Text.length
 instance HasLength String where
-    getLength' = fromIntegral . List.length
+    getLength = fromIntegral . List.length
 
--- TODO do we gotta reverse lol
+-- traverseM is some *shit*. Good luck if you wanna write this again or sth lol
+--
+-- The 'undefined' usage is safe: the cursor begins at 0, and @n - 0 >= 0@ for
+-- any natural @n@.
 linearize
     :: HasLength a
-    => [Patch 'AbsSeek m a]
-    -> Either (Error m a) [Patch 'FwdSeek m a]
-linearize ps = evalState (traverseM go (List.sortBy comparePatchSeeks ps)) 0
+    => [Patch 'AbsSeek d a]
+    -> Either (Error d a) [Patch 'FwdSeek d a]
+linearize ps = evalState (traverseM go (List.sortBy comparePatchSeeks ps)) (0, undefined)
   where
     go p = do
-        cursor <- get
-        case posSeek (patchPos p) `minusNaturalMaybe` cursor of
-          -- next offset is behind current cursor: current patch overlaps prev
-          Nothing -> return $ Left $ ErrorOverlap' cursor p
+        (cursor, pPrev) <- get
+        let pos = patchPos p
+        case posSeek pos `minusNaturalMaybe` cursor of
+          -- next absolute seek is before cursor: current patch overlaps prev
+          Nothing -> return $ Left $ ErrorOverlap' cursor p pPrev
           Just skip -> do
-            let dataLen = getLength' $ patchData p
-                cursor' = cursor + skip + dataLen
-                -- can't do via optics due to pos type changing!!
-                p' = p { patchPos = (patchPos p) { posSeek = cursor' } }
-            put cursor'
+            let cursor' = cursor + skip + getLength (patchData p)
+                p' = p { patchPos = pos { posSeek = skip } }
+            put (cursor', p)
             return $ Right p'
 
-data Error m a
-  = ErrorOverlap' (SeekRep 'AbsSeek) (Patch 'AbsSeek m a)
+data Error d a
+  = ErrorOverlap'
+        (SeekRep 'AbsSeek)      -- ^ absolute position in stream
+        (Patch 'AbsSeek d a)    -- ^ overlapping patch
+        (Patch 'AbsSeek d a)    -- ^ previous patch
   -- ^ Two edits wrote to the same offset.
+  --
+  -- Turns out it's trivial to track the 
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
 comparePatchSeeks :: Ord (SeekRep s) => Patch s d a -> Patch s d a -> Ordering
