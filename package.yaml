@@ -43,6 +43,7 @@ default-extensions:
 - DataKinds
 - TypeFamilies
 - UndecidableInstances
+- StandaloneKindSignatures
 
 dependencies:
 - base >= 4.12 && < 4.17

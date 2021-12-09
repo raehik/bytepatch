@@ -36,6 +36,7 @@ library
       BytePatch.Patch.Binary.HexByteString
       BytePatch.Patch.Binary.PascalText
       BytePatch.Patch.Linearize
+      Util
   other-modules:
       Paths_bytepatch
   hs-source-dirs:
@@ -63,6 +64,7 @@ library
       DataKinds
       TypeFamilies
       UndecidableInstances
+      StandaloneKindSignatures
   build-depends:
       aeson >=1.5 && <2.1
     , base >=4.12 && <4.17
@@ -106,6 +108,7 @@ executable bytepatch
       DataKinds
       TypeFamilies
       UndecidableInstances
+      StandaloneKindSignatures
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson >=1.5 && <2.1
@@ -158,6 +161,7 @@ test-suite spec
       DataKinds
       TypeFamilies
       UndecidableInstances
+      StandaloneKindSignatures
   build-tool-depends:
       hspec-discover:hspec-discover
   build-depends:

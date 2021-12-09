@@ -26,7 +26,7 @@ import           BytePatch.Patch
 import           Data.Functor.Const
 
 main :: IO ()
-main = Options.parse >>= run''
+main = Options.parse >>= run'
 
 {-
 run :: MonadIO m => Config -> m ()
@@ -51,25 +51,12 @@ run cfg = do
 -- hilarious little bit
 run' :: MonadIO m => Config -> m ()
 run' cfg = do
-    tryDecodeYaml @[Patch 'FwdSeek (Const ()) String] (cfgPatchscript cfg) >>= \case
+    tryDecodeYaml @[Patch 'FwdSeek (Const ()) (Const ()) String] (cfgPatchscript cfg) >>= \case
       Nothing -> quit "couldn't parse patchscript"
       Just ps -> do
         d <- Text.unpack . Text.decodeUtf8 <$> readStream' io
         let d' = Apply.patchListPure ps d
         writeStream' io $ Text.encodeUtf8 $ Text.pack d'
-  where
-    io = cfgStreamInOut cfg
-
-run'' :: MonadIO m => Config -> m ()
-run'' cfg = do
-    -- Align.Aligned (Patch 'RelSeek (Align.Meta 'FwdSeek Bin.Meta) Text)
-    -- = "a text patch that aligns to forward-seek" (+ bin meta??)
-    tryDecodeYaml @(Align.Aligned (Patch 'RelSeek (Align.Meta 'FwdSeek (Bin.Meta (Const ()))) Text)) (cfgPatchscript cfg) >>= \case
-      Nothing -> quit "couldn't parse patchscript"
-      Just ps ->
-        case Align.align ps of
-          Left  err -> quit' "couldn't align patchscript" err
-          Right ps' -> quit "TODO"
   where
     io = cfgStreamInOut cfg
 
@@ -100,8 +87,8 @@ quit :: MonadIO m => String -> m ()
 quit = liftIO . putStrLn
 
 --tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [BinMultiPatches a])
-tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [MultiPatch 'AbsSeek (Bin.Meta (Const ())) a])
-tryReadPatchscript = tryDecodeYaml
+--tryReadPatchscript :: forall a m. (BinRep a, FromJSON a, MonadIO m) => FilePath -> m (Maybe [MultiPatch 'AbsSeek (Bin.Meta (Const ())) a])
+--tryReadPatchscript = tryDecodeYaml
 
 tryDecodeYaml :: forall a m. (FromJSON a, MonadIO m) => FilePath -> m (Maybe a)
 tryDecodeYaml fp = do

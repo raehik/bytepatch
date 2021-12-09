@@ -30,11 +30,10 @@ spec :: Spec
 spec = do
     let p  = \d s -> Patch d $ Pos s (Const ())
         --p' = \d s -> Patch (fromRight' (toBinRep d)) $ Pos s (Const ())
-    it "given a specially prepared binary-representable patch, linearizing then binarifying gives a different result to binarifying then linearizing" $ do
+    it "shows that for multibyte UTF-8, order of linearizing/binarifying matters" $ do
       pending
     it "shows that for ASCII, order of linearizing/binarifying doesn't matter" $ do
       linearizeThenBinarify (asBin exAscii) `shouldBe` Right exAsciiBinLinearized
-      pending
 
 linearizeThenBinarify
     :: (BinRep a, HasLength a, Traversable d)

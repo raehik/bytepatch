@@ -2,29 +2,28 @@
 
 module BytePatch.Patch where
 
-import GHC.Generics ( Generic )
-import GHC.Natural
+import           Data.Kind
+import           GHC.Generics ( Generic )
+import           GHC.Natural
 
--- | A located edit to a stream of 'a' with some metadata 'd'.
-data Patch (s :: SeekKind) d a = Patch
+type PatchLike = SeekKind -> (Type -> Type) -> (Type -> Type) -> Type -> Type
+type Patch :: PatchLike
+data Patch s dd pd a = Patch
   { patchData :: a
-  , patchPos  :: Pos s (d a)
+  , patchMeta :: dd a
+  , patchPos  :: Pos s pd a
   } deriving (Generic, Functor, Foldable, Traversable)
 
-deriving instance (Eq (SeekRep s), Eq (d a), Eq a) => Eq (Patch s d a)
-deriving instance (Show (SeekRep s), Show (d a), Show a) => Show (Patch s d a)
+deriving instance (Eq   (SeekRep s), Eq   (dd a), Eq   (pd a), Eq   a) => Eq   (Patch s dd pd a)
+deriving instance (Show (SeekRep s), Show (dd a), Show (pd a), Show a) => Show (Patch s dd pd a)
 
--- | A "position" in a stream with some associated metadata 'a'.
---
--- The type of the seek value depends on its meaning: some are 'Natural's (e.g.
--- absolute offsets), others are 'Integer's (e.g. cursor-based seeks).
-data Pos (s :: SeekKind) a = Pos
+data Pos s pd a = Pos
   { posSeek :: SeekRep s
-  , posMeta :: a
+  , posMeta :: pd a
   } deriving (Generic, Functor, Foldable, Traversable)
 
-deriving instance (Eq (SeekRep s), Eq a) => Eq (Pos s a)
-deriving instance (Show (SeekRep s), Show a) => Show (Pos s a)
+deriving instance (Eq   (SeekRep s), Eq   (d a)) => Eq   (Pos s d a)
+deriving instance (Show (SeekRep s), Show (d a)) => Show (Pos s d a)
 
 -- | What a patch seek value means.
 data SeekKind
@@ -38,12 +37,3 @@ type family SeekRep (s :: SeekKind) where
     SeekRep 'FwdSeek = Natural
     SeekRep 'RelSeek = Integer
     SeekRep 'AbsSeek = Natural
-
--- | A single edit to multiple places in a stream of 'a' with some metadata 'd'.
-data MultiPatch (s :: SeekKind) d a = MultiPatch
-  { multiPatchData :: a
-  , multiPatchPos  :: [Pos s (d a)]
-  } deriving (Generic, Functor, Foldable, Traversable)
-
-deriving instance (Eq (SeekRep s), Eq (d a), Eq a) => Eq (MultiPatch s d a)
-deriving instance (Show (SeekRep s), Show (d a), Show a) => Show (MultiPatch s d a)

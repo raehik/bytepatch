@@ -1,8 +1,9 @@
--- | Attempt to linearize an absolute-seeking patch.
+-- | Attempt to linearize absolute-seeking patches.
 
 module BytePatch.Patch.Linearize where
 
 import           BytePatch.Patch
+import           Util                   ( traverseM )
 
 import           Control.Monad.State
 import qualified Data.List              as List
@@ -28,8 +29,8 @@ instance HasLength String where
 -- any natural @n@.
 linearize
     :: HasLength a
-    => [Patch 'AbsSeek d a]
-    -> Either (Error d a) [Patch 'FwdSeek d a]
+    => [Patch 'AbsSeek dd pd a]
+    -> Either (Error dd pd a) [Patch 'FwdSeek dd pd a]
 linearize ps = evalState (traverseM go (List.sortBy comparePatchSeeks ps)) (0, undefined)
   where
     go p = do
@@ -37,31 +38,21 @@ linearize ps = evalState (traverseM go (List.sortBy comparePatchSeeks ps)) (0, u
         let pos = patchPos p
         case posSeek pos `minusNaturalMaybe` cursor of
           -- next absolute seek is before cursor: current patch overlaps prev
-          Nothing -> return $ Left $ ErrorOverlap' cursor p pPrev
+          Nothing -> return $ Left $ ErrorOverlap cursor p pPrev
           Just skip -> do
             let cursor' = cursor + skip + getLength (patchData p)
                 p' = p { patchPos = pos { posSeek = skip } }
             put (cursor', p)
             return $ Right p'
 
-data Error d a
-  = ErrorOverlap'
+data Error dd pd a
+  = ErrorOverlap
         (SeekRep 'AbsSeek)      -- ^ absolute position in stream
-        (Patch 'AbsSeek d a)    -- ^ overlapping patch
-        (Patch 'AbsSeek d a)    -- ^ previous patch
+        (Patch 'AbsSeek dd pd a)    -- ^ overlapping patch
+        (Patch 'AbsSeek dd pd a)    -- ^ previous patch
   -- ^ Two edits wrote to the same offset.
-  --
-  -- Turns out it's trivial to track the 
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
-comparePatchSeeks :: Ord (SeekRep s) => Patch s d a -> Patch s d a -> Ordering
+comparePatchSeeks :: Ord (SeekRep s) => Patch s dd pd a -> Patch s dd pd a -> Ordering
 comparePatchSeeks p1 p2 = compare (g p1) (g p2)
   where g = posSeek . patchPos
-
--- lol. ty hw-kafka-client
-traverseM
-    :: (Traversable t, Applicative f, Monad m)
-    => (v -> m (f v'))
-    -> t v
-    -> m (f (t v'))
-traverseM f xs = sequenceA <$> traverse f xs

@@ -20,15 +20,13 @@ module BytePatch.Apply
   -- * Patch interface
     MonadFwdStream(..)
   , MonadCursorStream(..)
-  , Error(..)
 
   -- * Prepared patchers
-  , patchBinPure
   , patchListPure
 
   -- * General patchers
-  , patchBin
   , patch
+  , patchBin
 
   ) where
 
@@ -115,54 +113,19 @@ instance MonadIO m => MonadCursorStream (ReaderT Handle m) where
         hdl <- ask
         liftIO $ hSeek hdl RelativeSeek (fromIntegral n)
 
--- | Errors encountered during patch time.
-data Error a
-  = ErrorPatchOverlong
-  | ErrorPatchUnexpectedNonnull
-  | ErrorPatchDidNotMatchExpected Bytes Bytes
-  | ErrorPatchDataFailedToConvertToBytes a String -- TODO used for both data and expected
-    deriving (Eq, Show)
-
-data ErrorBin a
-  = ErrorBin (Bin.Error a)
-  | ErrorBinPatchError (Error a)
-    deriving (Eq, Show)
-
-patchBin
-    :: (BinRep a, MonadFwdStream m, Chunk m ~ Bytes)
-    => Bin.Cfg -> [Patch 'FwdSeek (Bin.Meta (Const ())) a]
-    -> m (Either (ErrorBin a) ())
-patchBin cfg = go
-  where
-    go [] = return $ Right ()
-    go (Patch ed (Pos n meta):es) = do
-        -- TODO can't do the following -- probs just need @lift $ ...@ tho
-        --bs <- mapLeft ErrorBin $ Bin.binRep ed $ Bin.mMaxBytes meta
-        case mapLeft ErrorBin $ Bin.binRep ed $ Bin.mMaxBytes meta of
-          Left err -> return $ Left err
-          Right bs -> do
-            advance n
-            bsStream <- readahead $ fromIntegral $ BS.length bs -- TODO catch overlong error
-            case mapLeft ErrorBin $ Bin.check cfg bsStream meta of
-              Left err -> return $ Left err
-              Right () -> overwrite bs >> go es
-
--- | Attempt to apply a patchscript to a 'Data.ByteString.ByteString'.
-patchBinPure :: Bin.Cfg -> [Patch 'FwdSeek (Bin.Meta (Const ())) Bytes] -> BS.ByteString -> Either (ErrorBin Bytes) BL.ByteString
-patchBinPure cfg ps bs =
-    let (mErr, (bsRemaining, bbPatched)) = runState (patchBin cfg ps) (bs, mempty)
-        bbPatched' = bbPatched <> BB.byteString bsRemaining
-     in case mErr of
-          Left err -> Left err
-          Right () -> Right $ BB.toLazyByteString bbPatched'
-
 patch
     :: (MonadFwdStream m, Chunk m ~ a)
-    => [Patch 'FwdSeek (Const ()) a]
+    => [Patch 'FwdSeek (Const ()) (Const ()) a]
     -> m ()
-patch = mapM_ $ \(Patch d (Pos n (Const ()))) -> advance n >> overwrite d
+patch = mapM_ $ \(Patch d (Const ()) (Pos n (Const ()))) -> advance n >> overwrite d
 
-patchListPure :: [Patch 'FwdSeek (Const ()) [a]] -> [a] -> [a]
+patchBin
+    :: (MonadFwdStream m, Chunk m ~ a)
+    => [Patch 'FwdSeek (Const ()) (Bin.MetaPos (Const ())) a]
+    -> m (Either TODO_ERRORS ())
+patchBin = undefined
+
+patchListPure :: [Patch 'FwdSeek (Const ()) (Const ()) [a]] -> [a] -> [a]
 patchListPure ps a =
     let (aRemaining, aPatched) = execState (patch ps) (a, mempty)
      in aPatched <> aRemaining

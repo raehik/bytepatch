@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RecordWildCards     #-}
 
 {-| Code for types which have a binary representation for patching.
 
@@ -12,7 +13,8 @@ executables. Provided instances and some data decisions reflect that:
 
 module BytePatch.Patch.Binary
   ( BinRep(..)
-  , Meta(..)
+  , MetaPatch(..)
+  , MetaPos(..)
   , Cfg(..)
   , Error(..)
   , check
@@ -32,30 +34,27 @@ import           Data.Either.Combinators
 
 type Bytes = BS.ByteString
 
-{-
-TODO for better typing split into
-    MetaConvert mMaxBs mMetaApply
-    MetaApply mNullTerm mExp mInner
-but it might be too unwieldy.
--}
-data Meta d a = Meta
-  { mNullTerminates :: Maybe (SeekRep 'FwdSeek)
-  -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
-  --
-  -- TODO patch check
-
-  , mExpected       :: Maybe a
-  -- ^ Stream segment should be this.
-  --
-  -- TODO patch check
-
-  , mMaxBytes       :: Maybe (SeekRep 'FwdSeek)
+data MetaPatch dd a = MetaPatch
+  { mdMaxBytes       :: Maybe (SeekRep 'FwdSeek)
   -- ^ Maximum number of bytes permitted to write at the associated position.
-  --
-  -- TODO conversion check
 
-  , mInner          :: d a
+  , mdInner          :: dd a
   } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
+
+data MetaPos pd a = MetaPos
+  { mpNullTerminates :: Maybe (SeekRep 'FwdSeek)
+  -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
+
+  , mpExpected       :: Maybe a
+  -- ^ Stream segment should be this.
+
+  , mpInner          :: pd a
+  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
+
+{-
+deriving instance (Eq   (SeekRep s), Eq   (cd a), Eq   (ad a)) => Eq   (Pos s cd ad a)
+deriving instance (Show (SeekRep s), Show (cd a), Show (ad a)) => Show (Pos s cd ad a)
+-}
 
 data Cfg = Cfg
   { cfgAllowPartialExpected :: Bool
@@ -64,26 +63,25 @@ data Cfg = Cfg
   } deriving (Eq, Show, Generic)
 
 data Error a
-  = ErrorBadBinRep a String -- TODO used for both patch data and expected data
+  = ErrorBadBinRep a String -- ^ used for patch data and all meta data
   | ErrorUnexpectedNonNull Bytes
   | ErrorDidNotMatchExpected Bytes Bytes
   | ErrorBinRepTooLong Bytes Natural
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
--- Note that we don't strip meta, because it holds apply time information as
--- well. Oh God, I'm going to have to redesign Patch to split meta into convert
--- time and apply time, aren't I...
---
--- Also, we traverse the WHOLE meta. Not just the binary. That should be clear,
--- but yeah. A lot of work gets done in @traverse toBinRep@.
 patchBinRep
-    :: (BinRep a, Traversable d)
-    => Patch s (Meta d) a
-    -> Either (Error a) (Patch s (Meta d) Bytes)
-patchBinRep p =
-    case traverse (\a -> mapLeft (\err -> (err, a)) $ toBinRep a) p of
-      Left (err, a) -> Left $ ErrorBadBinRep a err
-      Right p' -> Right p'
+    :: (BinRep a, Traversable dd, Traversable pd)
+    => Patch s (MetaPatch dd) (MetaPos pd) a
+    -> Either (Error a) (Patch s dd (MetaPos pd) Bytes)
+patchBinRep p = do
+    patchData <- toBinRep' (patchData p)
+    patchMeta <- mdInner <$> traverse toBinRep' (patchMeta p)
+    patchPos  <- traverse toBinRep' (patchPos p)
+    return Patch{..}
+  where
+    toBinRep' a = mapLeft (\e -> ErrorBadBinRep a e) $ toBinRep a
+
+--checkBinRep :: BinRep => a -> Either String Bytes
 
 binRep :: BinRep a => a -> Maybe Natural -> Either (Error a) Bytes
 binRep a mN =
@@ -97,13 +95,13 @@ binRep a mN =
             then Left $ ErrorBinRepTooLong bs n
             else Right bs
 
-check :: BinRep a => Cfg -> Bytes -> Meta d a -> Either (Error a) ()
+check :: BinRep a => Cfg -> Bytes -> MetaPos ad a -> Either (Error a) ()
 check cfg bs meta = do
-    case mExpected meta of
+    case mpExpected meta of
       Nothing -> Right ()
       Just aExpected -> do
         bsExpected <- binRep aExpected Nothing -- cheating a bit here
-        case mNullTerminates meta of
+        case mpNullTerminates meta of
           Nothing -> check' bs bsExpected
           Just nullsFrom ->
             let (bs', bsNulls) = BS.splitAt (fromIntegral nullsFrom) bs

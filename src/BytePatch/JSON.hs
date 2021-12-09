@@ -16,41 +16,35 @@ jsonCfgCamelDrop x = defaultOptions
   { fieldLabelModifier = camelTo2 '_' . drop x
   , rejectUnknownFields = True }
 
-instance (ToJSON   (SeekRep s), ToJSON   (d a), ToJSON   a) => ToJSON   (Patch s d a) where
+instance (ToJSON   (SeekRep s), ToJSON   (dd a), ToJSON   (pd a), ToJSON   a) => ToJSON   (Patch s dd pd a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 5
     toEncoding = genericToEncoding $ jsonCfgCamelDrop 5
-instance (FromJSON (SeekRep s), FromJSON (d a), FromJSON a) => FromJSON (Patch s d a) where
+instance (FromJSON (SeekRep s), FromJSON (dd a), FromJSON (pd a), FromJSON a) => FromJSON (Patch s dd pd a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 5
 
-instance (ToJSON   (SeekRep s), ToJSON   a) => ToJSON   (Pos s a) where
+instance (ToJSON   (SeekRep s), ToJSON   (pd a), ToJSON   a) => ToJSON   (Pos s pd a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 3
     toEncoding = genericToEncoding $ jsonCfgCamelDrop 3
-instance (FromJSON (SeekRep s), FromJSON a) => FromJSON (Pos s a) where
+instance (FromJSON (SeekRep s), FromJSON (pd a), FromJSON a) => FromJSON (Pos s pd a) where
     parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 3
 
-instance (ToJSON   (SeekRep s), ToJSON   (d a), ToJSON   a) => ToJSON   (MultiPatch s d a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 10
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 10
-instance (FromJSON (SeekRep s), FromJSON (d a), FromJSON a) => FromJSON (MultiPatch s d a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 10
+instance (ToJSON   (dd a), ToJSON   a) => ToJSON   (Bin.MetaPatch dd a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
+instance (FromJSON (dd a), FromJSON a) => FromJSON (Bin.MetaPatch dd a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
 
-instance (ToJSON   (d a), ToJSON   a) => ToJSON   (Bin.Meta d a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 1
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 1
-instance (FromJSON (d a), FromJSON a) => FromJSON (Bin.Meta d a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
+instance (ToJSON   (pd a), ToJSON   a) => ToJSON   (Bin.MetaPos pd a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
+instance (FromJSON (pd a), FromJSON a) => FromJSON (Bin.MetaPos pd a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
 
-instance (ToJSON   a) => ToJSON   (Align.Aligned a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 7
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 7
-instance (FromJSON a) => FromJSON (Align.Aligned a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 7
-
-instance (ToJSON   (SeekRep s), ToJSON   (d a), ToJSON   a) => ToJSON   (Align.Meta s d a) where
-    toJSON     = genericToJSON     $ jsonCfgCamelDrop 1
-    toEncoding = genericToEncoding $ jsonCfgCamelDrop 1
-instance (FromJSON (SeekRep s), FromJSON (d a), FromJSON a) => FromJSON (Align.Meta s d a) where
-    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 1
+instance (ToJSON   (SeekRep s), ToJSON   (pd a), ToJSON   a) => ToJSON   (Align.MetaPos s pd a) where
+    toJSON     = genericToJSON     $ jsonCfgCamelDrop 2
+    toEncoding = genericToEncoding $ jsonCfgCamelDrop 2
+instance (FromJSON (SeekRep s), FromJSON (pd a), FromJSON a) => FromJSON (Align.MetaPos s pd a) where
+    parseJSON  = genericParseJSON  $ jsonCfgCamelDrop 2
 
 instance FromJSON Bin.HexByteString where
     parseJSON = withText "hex bytestring" $ \t ->
