@@ -3,14 +3,15 @@ A 'Data.ByteString.ByteString' newtype wrapper indicating a human-readable
 bytestring, to be displayed in hex form (e.g. 00 12 AB FF).
 -}
 
-module BytePatch.Patch.Binary.HexByteString
+module BytePatch.HexByteString
   ( HexByteString(..)
   , parseHexByteString
   , prettyHexByteString
   ) where
 
-import           BytePatch.Patch.Binary
+import           StreamPatch.Patch.Binary ( BinRep(..) )
 
+import           Data.Void
 import           Text.Megaparsec
 import qualified Text.Megaparsec.Char       as MC
 import qualified Data.ByteString            as BS
@@ -19,6 +20,7 @@ import           Data.Word
 import qualified Data.Text                  as Text
 import           Data.Text                  ( Text )
 import           Data.List                  as List
+import           Data.Aeson
 
 type Bytes = BS.ByteString
 
@@ -30,6 +32,14 @@ instance Show HexByteString where
 
 instance BinRep HexByteString where
     toBinRep = Right . unHexByteString
+
+instance FromJSON HexByteString where
+    parseJSON = withText "hex bytestring" $ \t ->
+        case parseMaybe @Void parseHexByteString t of
+          Nothing -> fail "failed to parse hex bytestring (TODO)"
+          Just t' -> pure (HexByteString t')
+instance ToJSON   HexByteString where
+    toJSON = String . prettyHexByteString . unHexByteString
 
 -- | A hex bytestring looks like this: @00 01 89 8a   FEff@. You can mix and
 -- match capitalization and spacing, but I prefer to space each byte, full caps.

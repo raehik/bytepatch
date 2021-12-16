@@ -1,5 +1,5 @@
 name: bytepatch
-version: "0.2.1"
+version: "0.3.0"
 synopsis: Patch byte-representable data in a bytestream.
 description: Please see README.md.
 extra-source-files:
@@ -15,9 +15,8 @@ maintainer: Ben Orchard <thefirstmuffinman@gmail.com>
 author: Ben Orchard
 tested-with: GHC >= 8.6 && < 9.2
 
-# all unintrusive extensions from Alexis King's 2018 recommended defaults
-# https://lexi-lambda.github.io/blog/2018/02/10/an-opinionated-guide-to-haskell-in-2018/
-# plus TypeApplications (useful even without ScopedTypeVariables)
+# mostly Alexis King's 2018 recommended defaults
+# (most can be replaced with GHC 9.2's GHC2021 language extension
 default-extensions:
 - EmptyCase
 - FlexibleContexts
@@ -44,17 +43,20 @@ default-extensions:
 - TypeFamilies
 - UndecidableInstances
 - StandaloneKindSignatures
+- RankNTypes
+- ScopedTypeVariables
 
 dependencies:
 - base >= 4.12 && < 4.17
-- bytestring >= 0.10 && < 0.12
+- vinyl
 - mtl ^>= 2.2.2
-- optics >= 0.3 && < 0.5
-- generic-optics >= 2.1 && < 2.4 # TODO 2021-12-02 2.2 doesn't support GHC 9.2
+- bytestring >= 0.10 && < 0.12
 - text ^>= 1.2.4.1
 - megaparsec >= 9.0 && < 9.3
-- aeson >= 1.5 && < 2.1 # TODO 2021-12-02 Stack still no 2.0 . Urgh.
 - either ^>= 5.0.1.1
+- aeson >= 1.5 && < 2.1 # TODO 2021-12-02 Stack still no 2.0 . Urgh.
+- optics >= 0.3 && < 0.5
+- generic-optics >= 2.1 && < 2.4 # TODO 2021-12-02 2.2 doesn't support GHC 9.2
 
 library:
   source-dirs: src
@@ -83,4 +85,3 @@ tests:
     - bytepatch
     - hspec
     - QuickCheck
-

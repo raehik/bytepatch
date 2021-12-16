@@ -1,18 +1,16 @@
-Refactoring to streampatch:
+Improvements:
 
-  * Can I split meta into convert time & apply time meta? Or perhaps the
-    "bottom" layer is apply time meta (though I don't see how that would work
-    easily).
-    * Align is a convert-only layer. Binary is both.
-    * Convert time meta is ignored during apply time.
-    * Apply time meta is probably ignored during convert time?
-  * consider splitting out some of the binary stuff from Apply? If possible.
-    Though I'll still need stream patchers for binary. Maybe keep it with Binary
-    modules instead. Binary.Patch, Binary.Apply? hmm.
+  * Strip Aeson from library
+  * Combined tests
+  * QuickCheck tests (a pain...)
 
-Later extensions:
+Thoughts:
 
-  * QuickCheck tests (would be very fun!)
+  * Patch-time meta for checking equality, external to Binary. The Binary stuff
+    is special because it can do prefix checks and check for expected spare
+    nulls (useful for my needs). Prefix checks might be good to generalize.
+    Though honestly, the point of this is to write a hyper generic base, and add
+    binrep stuff on. The base without binrep remains rather useless.
 
 Partly related:
 

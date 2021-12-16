@@ -5,16 +5,14 @@ bytestring. The size of the length field is static. You essentially have to
 decide the maximum bytesize of the string on creation.
 -}
 
-{-# LANGUAGE ScopedTypeVariables#-}
+module StreamPatch.Patch.Binary.PascalText where
 
-module BytePatch.Patch.Binary.PascalText where
-
-import           BytePatch.Patch.Binary
+import           StreamPatch.Patch.Binary ( BinRep(..) )
 
 import qualified Data.Text.Encoding         as Text
 import           Data.Text                  ( Text )
 import qualified Data.ByteString            as BS
-import           GHC.TypeLits
+import           GHC.TypeNats
 import           Data.Proxy
 import           Data.Bits
 
@@ -48,9 +46,3 @@ encodeToSizedBE byteSize x =
 i2be :: (Integral a, Bits a) => a -> BS.ByteString
 i2be 0 = BS.singleton 0
 i2be i = BS.reverse $ BS.unfoldr (\i' -> if i' <= 0 then Nothing else Just (fromIntegral i', (i' `shiftR` 8))) i
-
--- 0 -> 255 = 1
--- 256 -> 65535 = 2
-
-ptLengthBytes :: forall n. KnownNat n => PascalText n -> Integer
-ptLengthBytes _ = natVal (Proxy @n)
