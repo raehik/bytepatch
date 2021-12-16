@@ -1,28 +1,17 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards     #-}
 
-{-| Code for types which have a binary representation for patching.
-
-I try to stay highly generic, but this is primarily aimed at making changes to
-executables. Provided instances and some data decisions reflect that:
-
-  * 'Text' encodes to a null-terminated string.
-  * 'Meta' includes support for stripping a null bytestring suffix when testing
-    equality.
--}
-
-module BytePatch.Patch.Binary
-  ( BinRep(..)
-  , MetaPatch(..)
-  , MetaPos(..)
+module StreamPatch.Patch.Binary
+  ( Meta(..)
+  , MetaStream(..)
   , Cfg(..)
   , Error(..)
-  , check
-  , binRep
   , patchBinRep
+  , BinRep(..)
+  , toBinRep'
+  , check
   ) where
 
-import           BytePatch.Patch
+import           StreamPatch.Patch
 
 import           GHC.Generics       ( Generic )
 import           GHC.Natural
@@ -31,30 +20,24 @@ import qualified Data.Text.Encoding as Text
 import qualified Data.Text          as Text
 import           Data.Text          ( Text )
 import           Data.Either.Combinators
+import           Data.Vinyl
+import           Data.Functor.Const
+import           Data.Vinyl.TypeLevel
 
 type Bytes = BS.ByteString
 
-data MetaPatch dd a = MetaPatch
-  { mdMaxBytes       :: Maybe (SeekRep 'FwdSeek)
+data Meta = Meta
+  { mMaxBytes :: Maybe (SeekRep 'FwdSeek)
   -- ^ Maximum number of bytes permitted to write at the associated position.
+  } deriving (Eq, Show, Generic)
 
-  , mdInner          :: dd a
-  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
-
-data MetaPos pd a = MetaPos
-  { mpNullTerminates :: Maybe (SeekRep 'FwdSeek)
+data MetaStream a = MetaStream
+  { msNullTerminates :: Maybe (SeekRep 'FwdSeek)
   -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
 
-  , mpExpected       :: Maybe a
+  , msExpected       :: Maybe a
   -- ^ Stream segment should be this.
-
-  , mpInner          :: pd a
   } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
-
-{-
-deriving instance (Eq   (SeekRep s), Eq   (cd a), Eq   (ad a)) => Eq   (Pos s cd ad a)
-deriving instance (Show (SeekRep s), Show (cd a), Show (ad a)) => Show (Pos s cd ad a)
--}
 
 data Cfg = Cfg
   { cfgAllowPartialExpected :: Bool
@@ -63,23 +46,37 @@ data Cfg = Cfg
   } deriving (Eq, Show, Generic)
 
 data Error a
-  = ErrorBadBinRep a String -- ^ used for patch data and all meta data
+  = ErrorBadBinRep a String
   | ErrorUnexpectedNonNull Bytes
   | ErrorDidNotMatchExpected Bytes Bytes
   | ErrorBinRepTooLong Bytes Natural
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
 patchBinRep
-    :: (BinRep a, Traversable dd, Traversable pd)
-    => Patch s (MetaPatch dd) (MetaPos pd) a
-    -> Either (Error a) (Patch s dd (MetaPos pd) Bytes)
-patchBinRep p = do
-    patchData <- toBinRep' (patchData p)
-    patchMeta <- mdInner <$> traverse toBinRep' (patchMeta p)
-    patchPos  <- traverse toBinRep' (patchPos p)
-    return Patch{..}
+    :: forall a s ss rs is i r
+    .  ( BinRep a
+       , Traversable (FunctorRec rs)
+       , r ~ Const Meta
+       , rs ~ RDelete r ss
+       , RElem r ss i
+       , RSubset rs ss is )
+    => Patch s ss a
+    -> Either (Error a) (Patch s rs Bytes)
+patchBinRep (Patch a s ms) = do
+    a' <- toBinRep' a
+    () <- case mMaxBytes m of
+            Nothing       -> return ()
+            Just maxBytes -> if   BS.length a' > fromIntegral maxBytes
+                             then Left $ ErrorBinRepTooLong a' maxBytes
+                             else return ()
+    let msDroppedMeta = FunctorRec $ rcast @rs $ getFunctorRec ms
+    ms' <- traverse toBinRep' msDroppedMeta
+    return $ Patch a' s ms'
   where
-    toBinRep' a = mapLeft (\e -> ErrorBadBinRep a e) $ toBinRep a
+    toBinRep' x = mapLeft (\e -> ErrorBadBinRep x e) $ toBinRep x
+    m = getConst @Meta $ getFlap $ rget $ getFunctorRec ms
+
+{-
 
 --checkBinRep :: BinRep => a -> Either String Bytes
 
@@ -95,13 +92,13 @@ binRep a mN =
             then Left $ ErrorBinRepTooLong bs n
             else Right bs
 
-check :: BinRep a => Cfg -> Bytes -> MetaPos ad a -> Either (Error a) ()
+check :: BinRep a => Cfg -> Bytes -> MetaStream a -> Either (Error a) ()
 check cfg bs meta = do
-    case mpExpected meta of
+    case msExpected meta of
       Nothing -> Right ()
       Just aExpected -> do
         bsExpected <- binRep aExpected Nothing -- cheating a bit here
-        case mpNullTerminates meta of
+        case msNullTerminates meta of
           Nothing -> check' bs bsExpected
           Just nullsFrom ->
             let (bs', bsNulls) = BS.splitAt (fromIntegral nullsFrom) bs
@@ -120,6 +117,8 @@ checkExpected cfg bs bsExpected =
       True  -> BS.isPrefixOf bs bsExpected
       False -> bs == bsExpected
 
+-}
+
 -- | Type has a binary representation for using in patchscripts.
 --
 -- Patchscripts are parsed parameterized over the type to edit. That type needs
@@ -135,6 +134,9 @@ checkExpected cfg bs bsExpected =
 class BinRep a where
     toBinRep :: a -> Either String Bytes
 
+toBinRep' :: BinRep a => a -> Either (Error a) Bytes
+toBinRep' a = mapLeft (ErrorBadBinRep a) $ toBinRep a
+
 -- | Bytestrings are copied as-is.
 instance BinRep BS.ByteString where
     toBinRep = Right . id
@@ -146,3 +148,34 @@ instance BinRep Text where
 -- | String is the same but goes the long way round, through Text.
 instance BinRep String where
     toBinRep = toBinRep . Text.pack
+
+check :: BinRep a => Cfg -> Bytes -> MetaStream a -> Either (Error a) ()
+check cfg bs meta = do
+    case msExpected meta of
+      Nothing -> Right ()
+      Just aExpected -> do
+        bsExpected <- checkInner aExpected Nothing -- cheating a bit here
+        case msNullTerminates meta of
+          Nothing -> check' bs bsExpected
+          Just nullsFrom ->
+            let (bs', bsNulls) = BS.splitAt (fromIntegral nullsFrom) bs
+             in if   bsNulls == BS.replicate (BS.length bsNulls) 0x00
+                then check' bs' bsExpected
+                else Left $ ErrorUnexpectedNonNull bs
+  where
+    check' bs' bsExpected =
+        case checkExpected bs' bsExpected of
+          True  -> Right ()
+          False -> Left $ ErrorDidNotMatchExpected bs' bsExpected
+    checkInner a mn = do
+        bs <- toBinRep' a
+        case mn of
+          Nothing -> Right bs
+          Just n  ->
+            if   fromIntegral (BS.length bs) > n
+            then Left $ ErrorBinRepTooLong bs n
+            else Right bs
+    checkExpected bs' bsExpected =
+        case cfgAllowPartialExpected cfg of
+          True  -> BS.isPrefixOf bs' bsExpected
+          False -> bs' == bsExpected

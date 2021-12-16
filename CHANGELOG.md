@@ -1,8 +1,14 @@
 ## 0.3.0 (Unreleased)
-Large internal refactoring. Various concepts surrounding stream patching have
-been decoupled and parameterized. A CLI interface can't expose all the internals
-in a useful way any longer, so I intend to rebrand this as streampatch and write
-a CLI elsewhere that focuses just on binary file patches.
+Large internal refactoring.
+
+  * Various concepts surrounding stream patching have been decoupled and
+    parameterized. Pre-apply patch transformations are modelled as "metadata
+    layers" which can be stripped off, and patch application functions require
+    that no irrelevant metadata is present.
+  * A new CLI inspired by the original tool exposes the useful bits.
+  * Internally, the package is split into streampatch and bytepatch. If I could
+    be bothered, they would be different packages, streampatch not requiring
+    things like Aeson and Megaparsec.
 
 ## 0.2.1 (2021-12-03)
   * large internal refactoring (still more to come!)

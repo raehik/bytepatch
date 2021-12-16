@@ -1,7 +1,5 @@
 -- | Various combined patch tests (using multiple layers).
 
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module BytePatch.Patch.CombinedSpec ( spec ) where
 
 import           BytePatch.Patch.Linearize
