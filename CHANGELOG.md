@@ -1,4 +1,4 @@
-## 0.3.0 (Unreleased)
+## 0.3.0 (2021-12-18)
 Large internal refactoring.
 
   * Various concepts surrounding stream patching have been decoupled and
