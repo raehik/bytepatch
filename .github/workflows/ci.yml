@@ -56,7 +56,7 @@ jobs:
       matrix:
         cabal: ["3.6"]  # ghcup recommended as of 2021-12-02
         ghc:
-        - "8.6"
+        - "8.10"
         - "9.0"
 
     # Match this with one of the GHC versions selected to produce an sdist and
