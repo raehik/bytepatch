@@ -13,7 +13,7 @@ license-file: LICENSE
 category: CLI
 maintainer: Ben Orchard <thefirstmuffinman@gmail.com>
 author: Ben Orchard
-tested-with: GHC >= 8.6 && < 9.2
+tested-with: GHC >= 8.10 && < 9.2
 
 # mostly Alexis King's 2018 recommended defaults
 # (most can be replaced with GHC 9.2's GHC2021 language extension
