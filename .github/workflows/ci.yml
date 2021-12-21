@@ -97,8 +97,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cabal-${{ matrix.ghc }}
 
-    - run: cabal build
-
     - name: Test
       run: cabal test --test-show-details=streaming
       env:
