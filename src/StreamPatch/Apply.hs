@@ -14,7 +14,7 @@ import           StreamPatch.Util           ( traverseM_ )
 
 -- TODO how to clean up, use Either monad inside m? (lift didn't work)
 applyBinFwd
-    :: forall a m. (MonadFwdStream m, Chunk m ~ BS.ByteString, BinRep a)
+    :: forall a m. (MonadFwdInplaceStream m, Chunk m ~ BS.ByteString, BinRep a)
     => Bin.Cfg
     -> [Patch 'FwdSeek '[Bin.MetaStream] a]
     -> m (Either (Bin.Error a) ())
@@ -44,7 +44,7 @@ runPureFwdBin cfg ps bs =
           Right () -> Right $ BB.toLazyByteString bbPatched'
 
 applySimpleFwd
-    :: (MonadFwdStream m, Chunk m ~ a)
+    :: (MonadFwdInplaceStream m, Chunk m ~ a)
     => [Patch 'FwdSeek '[] a]
     -> m ()
 applySimpleFwd =
