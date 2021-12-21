@@ -111,17 +111,19 @@ jobs:
       env:
         HSPEC_OPTIONS: --color
 
+    # need both --haddock-for-hackage
+    # for some reason, no --enable-doc means we don't link to base etc...
     - if: matrix.ghc == env.hackage_build
       name: Prepare Hackage artifacts
       run: |
-        cabal sdist   --builddir=tmp-ga-hackage
-        cabal haddock --builddir=tmp-ga-hackage --haddock-for-hackage
+        cabal sdist
+        cabal haddock --haddock-for-hackage --enable-doc
 
     - if: matrix.ghc == env.hackage_build
       name: Upload Hackage sdist
       uses: actions/upload-artifact@v2
       with:
-        path: tmp-ga-hackage/sdist/${{ env.EXE_NAME }}-*.tar.gz
+        path: dist-newstyle/sdist/${{ env.EXE_NAME }}-*.tar.gz
         name: ${{ env.EXE_NAME }}-sdist-${{ github.sha }}.tar.gz
         if-no-files-found: error
 
@@ -129,9 +131,15 @@ jobs:
       name: Upload Hackage Haddock docs
       uses: actions/upload-artifact@v2
       with:
-        path: tmp-ga-hackage/${{ env.EXE_NAME }}-*-docs.tar.gz
+        path: dist-newstyle/${{ env.EXE_NAME }}-*-docs.tar.gz
         name: ${{ env.EXE_NAME }}-hackage-haddocks-${{ github.sha }}.tar.gz
         if-no-files-found: error
+
+    - if: matrix.ghc == env.hackage_build
+      name: Delete prepared tarballs (else can't extract just newest next time)
+      run: |
+        rm dist-newstyle/${{ env.EXE_NAME }}-*-docs.tar.gz
+        rm dist-newstyle/sdist/${{ env.EXE_NAME }}-*.tar.gz
 
   mac-cabal-test:
     runs-on: macos-latest

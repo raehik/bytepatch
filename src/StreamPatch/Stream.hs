@@ -2,8 +2,6 @@ module StreamPatch.Stream where
 
 import           StreamPatch.Patch
 
-import           Util
-
 import           Data.Vinyl
 import           GHC.Natural
 import           Data.Kind

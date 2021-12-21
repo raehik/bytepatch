@@ -10,7 +10,7 @@ import qualified Data.ByteString            as BS
 import qualified Data.ByteString.Builder    as BB
 import qualified Data.ByteString.Lazy       as BL
 import           Control.Monad.State
-import           Util
+import           StreamPatch.Util           ( traverseM_ )
 
 -- TODO how to clean up, use Either monad inside m? (lift didn't work)
 applyBinFwd

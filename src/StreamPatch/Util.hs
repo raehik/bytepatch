@@ -1,4 +1,4 @@
-module Util where
+module StreamPatch.Util where
 
 import           Data.Foldable ( sequenceA_ )
 

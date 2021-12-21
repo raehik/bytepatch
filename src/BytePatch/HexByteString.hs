@@ -22,9 +22,7 @@ import           Data.Text                  ( Text )
 import           Data.List                  as List
 import           Data.Aeson
 
-type Bytes = BS.ByteString
-
-newtype HexByteString = HexByteString { unHexByteString :: Bytes }
+newtype HexByteString = HexByteString { unHexByteString :: BS.ByteString }
     deriving (Eq)
 
 instance Show HexByteString where
@@ -43,7 +41,7 @@ instance ToJSON   HexByteString where
 
 -- | A hex bytestring looks like this: @00 01 89 8a   FEff@. You can mix and
 -- match capitalization and spacing, but I prefer to space each byte, full caps.
-parseHexByteString :: (MonadParsec e s m, Token s ~ Char) => m Bytes
+parseHexByteString :: (MonadParsec e s m, Token s ~ Char) => m BS.ByteString
 parseHexByteString = BS.pack <$> parseHexByte `sepBy` MC.hspace
 
 -- | Parse a byte formatted as two hex digits e.g. EF. You _must_ provide both
@@ -56,7 +54,7 @@ parseHexByte = do
     c2 <- MC.hexDigitChar
     return $ 0x10 * fromIntegral (Char.digitToInt c1) + fromIntegral (Char.digitToInt c2)
 
-prettyHexByteString :: Bytes -> Text
+prettyHexByteString :: BS.ByteString -> Text
 prettyHexByteString =
     Text.concat . List.intersperse (Text.singleton ' ') . fmap (f . prettyHexByte) . BS.unpack
   where

@@ -12,7 +12,7 @@ import qualified Data.List              as List
 import qualified Data.ByteString        as BS
 import qualified Data.Text              as Text
 import           Data.Text              ( Text )
-import           Util ( traverseM )
+import           StreamPatch.Util       ( traverseM )
 
 class HasLength a where
     getLength :: a -> Natural

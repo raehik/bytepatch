@@ -8,8 +8,7 @@ import           GHC.Natural
 import           Data.Vinyl
 import           Control.Applicative ( liftA2 )
 
-type PatchLike = SeekKind -> [Type -> Type] -> Type -> Type
-type Patch :: PatchLike
+type Patch :: SeekKind -> [Type -> Type] -> Type -> Type
 data Patch s fs a = Patch
   { patchData :: a
   , patchSeek :: SeekRep s
