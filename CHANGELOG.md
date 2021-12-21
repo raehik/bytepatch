@@ -1,3 +1,6 @@
+## 0.3.1 (2021-12-21)
+  * packaging improvements (documentation, CI)
+
 ## 0.3.0 (2021-12-18)
 Large internal refactoring.
 
