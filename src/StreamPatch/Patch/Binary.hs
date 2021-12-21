@@ -1,4 +1,6 @@
-{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE RecordWildCards #-}
+
+-- TODO rewrite patch/check bits (some overlap)
 
 module StreamPatch.Patch.Binary
   ( Meta(..)
@@ -70,9 +72,7 @@ patchBinRep (Patch a s ms) = do
     let msDroppedMeta = FunctorRec $ rcast @rs $ getFunctorRec ms
     ms' <- traverse toBinRep' msDroppedMeta
     return $ Patch a' s ms'
-  where
-    toBinRep' x = mapLeft (\e -> ErrorBadBinRep x e) $ toBinRep x
-    m = getConst @Meta $ getFlap $ rget $ getFunctorRec ms
+  where m = getConst @Meta $ getFlap $ rget $ getFunctorRec ms
 
 -- | Type has a binary representation for using in patchscripts.
 --
@@ -123,13 +123,13 @@ check cfg bs meta = do
           True  -> Right ()
           False -> Left $ ErrorDidNotMatchExpected bs' bsExpected
     checkInner a mn = do
-        bs <- toBinRep' a
+        bs' <- toBinRep' a
         case mn of
-          Nothing -> Right bs
+          Nothing -> Right bs'
           Just n  ->
-            if   fromIntegral (BS.length bs) > n
-            then Left $ ErrorBinRepTooLong bs n
-            else Right bs
+            if   fromIntegral (BS.length bs') > n
+            then Left $ ErrorBinRepTooLong bs' n
+            else Right bs'
     checkExpected bs' bsExpected =
         case cfgAllowPartialExpected cfg of
           True  -> BS.isPrefixOf bs' bsExpected
