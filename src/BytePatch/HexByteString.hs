@@ -1,6 +1,6 @@
 {- |
-A 'Data.ByteString.ByteString' newtype wrapper indicating a human-readable
-bytestring, to be displayed in hex form (e.g. 00 12 AB FF).
+A 'BS.ByteString' newtype wrapper indicating a human-readable bytestring, to be
+displayed in hex form (e.g. 00 12 AB FF).
 -}
 
 module BytePatch.HexByteString

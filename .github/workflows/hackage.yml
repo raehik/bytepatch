@@ -49,12 +49,15 @@ jobs:
         path: |
           ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
           dist-newstyle
-        key: haddock-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-        restore-keys: haddock-${{ matrix.ghc }}
+        key: haddock-${{ env.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: haddock-${{ env.ghc }}
 
-    # need both --haddock-for-hackage (for special links) and
-    # --enable-documentation (for dependencies)
-    - run: cabal haddock --haddock-for-hackage --enable-doc
+    # haddock command has AWFUL behaviour:
+    #   * --enable-documentation builds docs for dependencies to link to them
+    #   * --reinstall is required or CI still won't build docs for some base
+    #     dependencies (???)
+    #   * --haddock-for-hackage prepares links for Hackage
+    - run: cabal haddock --haddock-for-hackage --enable-documentation --reinstall
     - run: cabal sdist
 
     - name: Upload Hackage sdist

@@ -39,8 +39,8 @@ encodeToSizedBE byteSize x =
         then Nothing
         else Just $ BS.replicate nulls 0x00 <> bs
 
--- | Re-encode an 'Integer' to a little-endian integer stored as a 'ByteString'
---   using the fewest bytes needed to represent it.
+-- | Re-encode an 'Integer' to a little-endian integer stored as a
+--   'BS.ByteString' using the fewest bytes needed to represent it.
 --
 -- adapated from crypto-api 0.13.3, Crypto.Util.i2bs_unsized
 i2be :: (Integral a, Bits a) => a -> BS.ByteString
