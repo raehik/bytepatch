@@ -1,3 +1,6 @@
+# This workflow is based on the expectation that GitHub's runners install GHC
+# using ghcup with default settings (installs GHCs to `~/.ghcup/ghc/$VERSION`).
+
 name: Hackage artifacts
 
 on:
@@ -6,14 +9,14 @@ on:
     - main
 
 env:
+  # ghcup needs full version string (e.g. 9.0.1, not 9.0)
+  ghc: "9.0.1"
   EXE_NAME: bytepatch
-  ghc: "9.0" # TODO: can't use this in job name...
-  cabal: "3.6" # ghcup recommended as of 2021-12-21
 
 jobs:
-  ubuntu-cabal-hackage:
+  hackage:
     runs-on: ubuntu-latest
-    name: Ubuntu / GHC 9.0, Cabal / Hackage
+    name: Hackage artifacts
 
     steps:
 
@@ -34,12 +37,24 @@ jobs:
             touch -d $(git log --pretty=format:%cI -1 "$rev" -- "$f") "$f";
         done
 
-    - name: Setup Haskell build environment
-      id: setup-haskell-build-env
-      uses: haskell/actions/setup@v1
+    - name: Delete preinstalled docs-stripped GHC ${{ env.ghc }}
+      run: rm -rf $HOME/.ghcup/ghc/${{ env.ghc }}
+
+    - name: Cache GHC ${{ env.ghc }}
+      uses: actions/cache@v2
       with:
-        ghc-version: ${{ env.ghc }}
-        cabal-version: ${{ env.cabal }}
+        path: ~/.ghcup/ghc/${{ env.ghc }}
+        key: haddock-${{ env.ghc }}-ghc
+
+    - name: Install GHC ${{ env.ghc }} if not present from cache
+      run: |
+        if [ ! -d $HOME/.ghcup/ghc/${{ env.ghc }} ]; then
+            ghcup install ghc --force ${{ env.ghc }}
+        fi
+
+    - run: ghcup set ghc ${{ env.ghc }}
+
+    - run: cabal update
 
     - run: cabal freeze
 
@@ -47,17 +62,12 @@ jobs:
       uses: actions/cache@v2
       with:
         path: |
-          ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+          ~/.cabal/store
           dist-newstyle
-        key: haddock-${{ env.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-        restore-keys: haddock-${{ env.ghc }}
+        key:          haddock-${{ env.ghc }}-cabal-${{ hashFiles('cabal.project.freeze') }}
+        restore-keys: haddock-${{ env.ghc }}-cabal
 
-    # haddock command has AWFUL behaviour:
-    #   * --enable-documentation builds docs for dependencies to link to them
-    #   * --reinstall is required or CI still won't build docs for some base
-    #     dependencies (???)
-    #   * --haddock-for-hackage prepares links for Hackage
-    - run: cabal haddock --haddock-for-hackage --enable-documentation --reinstall
+    - run: cabal haddock --haddock-for-hackage --enable-documentation
     - run: cabal sdist
 
     - name: Upload Hackage sdist
