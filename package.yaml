@@ -1,19 +1,18 @@
 name: bytepatch
-version: "0.3.0"
+version: "0.3.1"
 synopsis: Patch byte-representable data in a bytestream.
 description: Please see README.md.
 extra-source-files:
 - README.md
 - CHANGELOG.md
-
-github: raehik/bytepatch
+category: CLI
+tested-with: GHC >= 8.10 && < 9.2
 license: MIT
 license-file: LICENSE
 
-category: CLI
+github: raehik/bytepatch
 maintainer: Ben Orchard <thefirstmuffinman@gmail.com>
 author: Ben Orchard
-tested-with: GHC >= 8.10 && < 9.2
 
 # mostly Alexis King's 2018 recommended defaults
 # (most can be replaced with GHC 9.2's GHC2021 language extension
@@ -48,7 +47,7 @@ default-extensions:
 
 dependencies:
 - base >= 4.12 && < 4.17
-- vinyl
+- vinyl ^>= 0.13.3
 - mtl ^>= 2.2.2
 - bytestring >= 0.10 && < 0.12
 - text ^>= 1.2.4.1
@@ -72,16 +71,16 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - bytepatch
-    - optparse-applicative >= 0.16.1 && < 0.17
-    - yaml >= 0.11.7 && < 0.12
+    - optparse-applicative ^>= 0.16.1
+    - yaml ^>= 0.11.7
 
 tests:
   spec:
     main: Spec.hs
     source-dirs: test
     build-tools:
-    - hspec-discover
+    - hspec-discover >= 2.7 && < 2.10
     dependencies:
     - bytepatch
-    - hspec
-    - QuickCheck
+    - hspec >= 2.7 && < 2.10
+    - QuickCheck ^>= 2.14.2
