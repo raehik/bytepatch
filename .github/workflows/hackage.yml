@@ -7,13 +7,13 @@ on:
 
 env:
   EXE_NAME: bytepatch
-  ghc: "9.0"
+  ghc: "9.0" # TODO: can't use this in job name...
   cabal: "3.6" # ghcup recommended as of 2021-12-21
 
 jobs:
   ubuntu-cabal-hackage:
     runs-on: ubuntu-latest
-    name: Ubuntu / GHC ${{ env.ghc }}, Cabal / Hackage
+    name: Ubuntu / GHC 9.0, Cabal / Hackage
 
     steps:
 
