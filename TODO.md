@@ -1,6 +1,10 @@
+Features:
+
+  * Concat patches
+    * only really for performance. cba because I can just pipe things
+
 Improvements:
 
-  * Strip Aeson from library
   * Combined tests
   * QuickCheck tests (a pain...)
 
