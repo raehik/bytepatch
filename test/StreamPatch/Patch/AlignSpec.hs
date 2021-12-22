@@ -5,6 +5,7 @@ import           Test.Hspec
 import           Util
 
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 import           Data.Vinyl
 import           Data.Functor.Const
 import           GHC.Natural
@@ -13,7 +14,7 @@ makeUnalignedPatch
     :: [(Integer, a)]
     -> [Patch 'RelSeek '[Const (Meta 'FwdSeek)] a]
 makeUnalignedPatch = map go
-  where go (n, a) = Patch a n $ FunctorRec $ Flap (Const (Meta Nothing)) :& RNil
+  where go (n, a) = Patch a n $ HFunctorList $ Flap (Const (Meta Nothing)) :& RNil
 
 align'
     :: Integer -> [(Integer, String)]

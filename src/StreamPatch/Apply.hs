@@ -2,6 +2,7 @@ module StreamPatch.Apply where
 
 import           StreamPatch.Stream
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 import qualified StreamPatch.Patch.Binary   as Bin
 import           StreamPatch.Patch.Binary   ( BinRep )
 
@@ -18,7 +19,7 @@ applyBinFwd
     => Bin.Cfg
     -> [Patch 'FwdSeek '[Bin.MetaStream] a]
     -> m (Either (Bin.Error a) ())
-applyBinFwd cfg = traverseM_ $ \(Patch a s (FunctorRec (Flap m :& RNil))) -> do
+applyBinFwd cfg = traverseM_ $ \(Patch a s (HFunctorList (Flap m :& RNil))) -> do
     case Bin.toBinRep' a of
       Left err -> return $ Left err
       Right bs -> do
@@ -48,7 +49,7 @@ applySimpleFwd
     => [Patch 'FwdSeek '[] a]
     -> m ()
 applySimpleFwd =
-    mapM_ $ \(Patch a s (FunctorRec RNil)) -> advance s >> overwrite a
+    mapM_ $ \(Patch a s (HFunctorList RNil)) -> advance s >> overwrite a
 
 -- stupid because no monotraversable :<
 runPureSimpleFwdList

@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- TODO rewrite patch/check bits (some overlap)
+-- TODO rewrite, rename checks (one for process, one for apply)
 
 module StreamPatch.Patch.Binary
   ( Meta(..)
@@ -14,6 +15,7 @@ module StreamPatch.Patch.Binary
   ) where
 
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 
 import           GHC.Generics       ( Generic )
 import           GHC.Natural
@@ -53,9 +55,9 @@ data Error a
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
 patchBinRep
-    :: forall a s ss rs is i r
+    :: forall a s ss i is r rs
     .  ( BinRep a
-       , Traversable (FunctorRec rs)
+       , Traversable (HFunctorList rs)
        , r ~ Const Meta
        , rs ~ RDelete r ss
        , RElem r ss i
@@ -64,15 +66,17 @@ patchBinRep
     -> Either (Error a) (Patch s rs BS.ByteString)
 patchBinRep (Patch a s ms) = do
     a' <- toBinRep' a
-    () <- case mMaxBytes m of
-            Nothing       -> return ()
-            Just maxBytes -> if   BS.length a' > fromIntegral maxBytes
-                             then Left $ ErrorBinRepTooLong a' maxBytes
-                             else return ()
-    let msDroppedMeta = FunctorRec $ rcast @rs $ getFunctorRec ms
-    ms' <- traverse toBinRep' msDroppedMeta
-    return $ Patch a' s ms'
-  where m = getConst @Meta $ getFlap $ rget $ getFunctorRec ms
+    let (metaCheck, ms') = hflStrip (checkMeta a' . getConst) ms
+    metaCheck
+    ms'' <- traverse toBinRep' ms'
+    return $ Patch a' s ms''
+  where
+    checkMeta a' m = case mMaxBytes m of
+                       Nothing       -> return ()
+                       Just maxBytes ->
+                         if   BS.length a' > fromIntegral maxBytes
+                         then Left $ ErrorBinRepTooLong a' maxBytes
+                         else return ()
 
 -- | Type has a binary representation for using in patchscripts.
 --

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.5.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
@@ -31,6 +31,7 @@ library
       BytePatch
       BytePatch.HexByteString
       StreamPatch.Apply
+      StreamPatch.HFunctorList
       StreamPatch.Patch
       StreamPatch.Patch.Align
       StreamPatch.Patch.Binary

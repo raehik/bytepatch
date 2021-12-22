@@ -1,6 +1,7 @@
 module StreamPatch.Patch.Linearize where
 
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 
 import           GHC.Generics ( Generic )
 import           Numeric.Natural

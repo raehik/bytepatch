@@ -1,6 +1,7 @@
 module StreamPatch.Patch.Align where
 
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 
 import           GHC.Generics ( Generic )
 import           Numeric.Natural
@@ -25,6 +26,7 @@ data Error s
 deriving instance (Eq   (SeekRep s)) => Eq   (Error s)
 deriving instance (Show (SeekRep s)) => Show (Error s)
 
+{-
 -- | Attempt to align the given patch to 0 using the given base.
 align
     :: forall s a ss rs is i r
@@ -50,9 +52,37 @@ align sBase (Patch a s ms) =
     sAligned = sBase + s
     -- TODO require a visible type application here, unsure why. even without
     -- the SeekRep indirection
-    m = getConst @(Meta s) $ getFlap $ rget $ getFunctorRec ms
-    ms' = FunctorRec $ rcast @rs $ getFunctorRec ms
+    m = getConst @(Meta s) $ hflGet ms
+    ms' = HFunctorList $ rcast @rs $ getHFunctorList ms
     reform s' = Right $ Patch a s' ms'
+-}
+
+-- | Attempt to align the given patch to 0 using the given base.
+align
+    :: forall s a ss i is r rs
+    .  ( SeekRep s ~ Natural
+       , r ~ Const (Meta s)
+       , rs ~ RDelete r ss
+       , RElem r ss i
+       , RSubset rs ss is )
+    => SeekRep 'RelSeek
+    -> Patch 'RelSeek ss a
+    -> Either (Error s) (Patch s rs a)
+align sBase (Patch a s ms) = do
+    s' <- tryAlignSeek
+    let (metadataCheck, ms') = hflStrip (check s' . getConst @(Meta s)) ms
+    metadataCheck
+    return $ Patch a s' ms'
+  where
+    tryAlignSeek = case tryIntegerToNatural (sBase + s) of
+                     Nothing -> Left $ ErrorSeekBelow0 $ sBase + s
+                     Just n  -> Right n
+    check s' m = case mExpected m of
+                   Nothing        -> Right ()
+                   Just sExpected ->
+                     if   sExpected == s'
+                     then Right ()
+                     else Left $ ErrorDoesntMatchExpected sExpected s'
 
 tryIntegerToNatural :: Integer -> Maybe Natural
 tryIntegerToNatural n | n < 0     = Nothing

@@ -1,3 +1,6 @@
+## Unreleased
+  * clean up FunctorRec into standalone HFunctorList module
+
 ## 0.3.1 (2021-12-21)
   * packaging improvements (documentation, CI)
 

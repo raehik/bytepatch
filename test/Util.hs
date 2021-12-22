@@ -3,6 +3,7 @@
 module Util where
 
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 import           Data.Vinyl
 import           Text.Megaparsec
 import           Data.Void
@@ -19,10 +20,10 @@ instance Arbitrary Natural where
   shrink    = shrinkIntegral
 
 makePatch :: a -> Natural -> Patch 'FwdSeek '[] a
-makePatch a n = Patch a n $ FunctorRec RNil
+makePatch a n = Patch a n $ HFunctorList RNil
 
 makePatch' :: forall s a. a -> SeekRep s -> Patch s '[] a
-makePatch' a n = Patch a n $ FunctorRec RNil
+makePatch' a n = Patch a n $ HFunctorList RNil
 
 makePatchscript :: [(Natural, a)] -> [Patch 'FwdSeek '[] a]
 makePatchscript = map go

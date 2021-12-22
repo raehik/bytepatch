@@ -4,6 +4,7 @@
 module BytePatch where
 
 import           StreamPatch.Patch
+import           StreamPatch.HFunctorList
 import qualified StreamPatch.Patch.Binary as Bin
 import qualified StreamPatch.Patch.Align  as Align
 
@@ -71,7 +72,7 @@ convert :: (Seek s a -> Rec (Flap a) fs) -> MultiPatch s a -> [Patch s fs a]
 convert f p = map go (mpAt p)
   where go s = Patch { patchData = mpData p
                      , patchSeek = sSeek s
-                     , patchMeta = FunctorRec $ f s }
+                     , patchMeta = HFunctorList $ f s }
 
 -- TODO how to clean up (it's like liftA2 over n instead of 2. like a fold)
 -- likely 'ap'!
