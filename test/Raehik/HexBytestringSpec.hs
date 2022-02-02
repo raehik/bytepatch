@@ -1,6 +1,6 @@
-module BytePatch.HexByteStringSpec ( spec ) where
+module Raehik.HexBytestringSpec ( spec ) where
 
-import           BytePatch.HexByteString
+import           Raehik.HexBytestring
 import           Test.Hspec
 import           Util
 
@@ -8,7 +8,7 @@ import qualified Data.ByteString                as BS
 
 spec :: Spec
 spec = do
-    let parse = parseFromCharStream parseHexByteString
+    let parse = parseFromCharStream parseHexBytestring
         bs = BS.pack
     it "parses valid hex bytestrings" $ do
       parse "00" `shouldBe` Just (bs [0x00])
