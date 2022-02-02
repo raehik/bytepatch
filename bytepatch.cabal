@@ -75,7 +75,7 @@ library
     , base >=4.12 && <4.17
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.1.0 && <2.3
+    , generic-optics >=2.1.0.0 && <2.2
     , megaparsec >=9.0 && <9.3
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
@@ -124,7 +124,7 @@ executable bytepatch
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.1.0 && <2.3
+    , generic-optics >=2.1.0.0 && <2.2
     , megaparsec >=9.0 && <9.3
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
@@ -181,7 +181,7 @@ test-suite spec
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.1.0 && <2.3
+    , generic-optics >=2.1.0.0 && <2.2
     , hspec >=2.7 && <2.10
     , megaparsec >=9.0 && <9.3
     , mtl >=2.2.2 && <2.3
