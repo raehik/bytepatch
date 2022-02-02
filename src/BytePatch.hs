@@ -3,17 +3,18 @@
 
 module BytePatch where
 
+import           BytePatch.Orphans()
 import           StreamPatch.Patch
 import           StreamPatch.HFunctorList
-import qualified StreamPatch.Patch.Binary as Bin
-import qualified StreamPatch.Patch.Align  as Align
+import qualified StreamPatch.Patch.Binary   as Bin
+import qualified StreamPatch.Patch.Align    as Align
 
 import           Numeric.Natural
 import           Data.Functor.Const
 import           Data.Vinyl
 import           Data.Vinyl.TypeLevel
 import           Data.Aeson
-import           GHC.Generics ( Generic )
+import           GHC.Generics
 
 data MultiPatch s a = MultiPatch
   { mpData :: a
@@ -46,7 +47,7 @@ data Aligned p = Aligned
 jsonCfgCamelDrop :: Int -> Options
 jsonCfgCamelDrop x = defaultOptions
   { fieldLabelModifier = camelTo2 '_' . drop x
-  , rejectUnknownFields = False }
+  , rejectUnknownFields = True }
 
 instance (ToJSON   (SeekRep s), ToJSON   a) => ToJSON   (MultiPatch s a) where
     toJSON     = genericToJSON     $ jsonCfgCamelDrop 2

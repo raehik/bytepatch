@@ -12,8 +12,7 @@ import qualified StreamPatch.Patch.Binary as Bin
 import           StreamPatch.Patch.Binary ( BinRep )
 import qualified StreamPatch.Apply as Apply
 import           BytePatch as BP
-import qualified BytePatch.HexByteString as HexBS
-import           BytePatch.HexByteString ( HexByteString )
+import           Raehik.HexBytestring
 
 import qualified System.Exit as System
 import           Numeric.Natural
@@ -56,7 +55,7 @@ run = readPatchscript >>= processPatchScript >>= writePatched
         cpf <- asks cfgPatchFormat
         case cpfDataType cpf of
           CTextPatch    -> processText psBs
-          CBinPatch     -> processBin' @HexByteString psBs
+          CBinPatch     -> processBin' @HexBytestring psBs
           CTextBinPatch -> processBin' @Text          psBs
 
     processText :: Bytes -> m Bytes
@@ -172,7 +171,7 @@ showErrorBin = \case
   Bin.ErrorUnexpectedNonNull bs -> "ErrorUnexpectedNonNull " <> go bs
   Bin.ErrorDidNotMatchExpected bs1 bs2 -> "ErrorDidNotMatchExpected " <> go bs1 <> " " <> go bs2
   Bin.ErrorBinRepTooLong bs n -> "ErrorBinRepTooLong " <> go bs <> " " <> show n
-  where go bs = "\"" <> Text.unpack (HexBS.prettyHexByteString bs) <> "\""
+  where go bs = "\"" <> Text.unpack (prettyHexBytestring bs) <> "\""
 
 {-
 

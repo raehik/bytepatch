@@ -29,7 +29,8 @@ source-repository head
 library
   exposed-modules:
       BytePatch
-      BytePatch.HexByteString
+      BytePatch.Orphans
+      Raehik.HexBytestring
       StreamPatch.Apply
       StreamPatch.HFunctorList
       StreamPatch.Patch

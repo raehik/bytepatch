@@ -1,4 +1,4 @@
-{-| Newtype for manipulating length-prefixed strings.
+{- | Newtype for manipulating length-prefixed strings.
 
 This type is for UTF-8 'Text' that you intend to write out to a length-prefixed
 bytestring. The size of the length field is static. You essentially have to
