@@ -56,7 +56,7 @@ dependencies:
 - either ^>= 5.0.1.1
 - aeson >= 1.5 && < 2.1 # TODO 2021-12-02 Stack still no 2.0 . Urgh.
 - optics >= 0.3 && < 0.5
-- generic-optics ^>= 2.1.0.0 # TODO ^>= 2.2.1.0 when GHC 9.2
+- generic-optics ^>= 2.2.0.0 # TODO ^>= 2.2.1.0 when GHC 9.2
 
 library:
   source-dirs: src
@@ -73,7 +73,7 @@ executables:
     dependencies:
     - bytepatch
     - optparse-applicative ^>= 0.16.1
-    - yaml ^>= 0.11.7.0
+    - yaml ^>= 0.11.6.0
 
 tests:
   spec:
