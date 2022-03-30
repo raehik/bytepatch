@@ -50,25 +50,31 @@ library
       FlexibleInstances
       InstanceSigs
       MultiParamTypeClasses
+      PolyKinds
       LambdaCase
-      DeriveGeneric
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingStrategies
-      GeneralizedNewtypeDeriving
       StandaloneDeriving
-      BangPatterns
-      KindSignatures
-      TypeOperators
+      DeriveAnyClass
+      DeriveGeneric
+      DeriveDataTypeable
+      DeriveFunctor
+      DeriveFoldable
+      DeriveTraversable
+      DeriveLift
+      ImportQualifiedPost
+      StandaloneKindSignatures
+      DerivingVia
+      RoleAnnotations
       TypeApplications
       DataKinds
       TypeFamilies
-      UndecidableInstances
-      StandaloneKindSignatures
+      TypeOperators
+      BangPatterns
+      GADTs
+      DefaultSignatures
       RankNTypes
+      UndecidableInstances
+      MagicHash
       ScopedTypeVariables
   build-depends:
       aeson >=1.5 && <2.1
@@ -97,25 +103,31 @@ executable bytepatch
       FlexibleInstances
       InstanceSigs
       MultiParamTypeClasses
+      PolyKinds
       LambdaCase
-      DeriveGeneric
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingStrategies
-      GeneralizedNewtypeDeriving
       StandaloneDeriving
-      BangPatterns
-      KindSignatures
-      TypeOperators
+      DeriveAnyClass
+      DeriveGeneric
+      DeriveDataTypeable
+      DeriveFunctor
+      DeriveFoldable
+      DeriveTraversable
+      DeriveLift
+      ImportQualifiedPost
+      StandaloneKindSignatures
+      DerivingVia
+      RoleAnnotations
       TypeApplications
       DataKinds
       TypeFamilies
-      UndecidableInstances
-      StandaloneKindSignatures
+      TypeOperators
+      BangPatterns
+      GADTs
+      DefaultSignatures
       RankNTypes
+      UndecidableInstances
+      MagicHash
       ScopedTypeVariables
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -152,25 +164,31 @@ test-suite spec
       FlexibleInstances
       InstanceSigs
       MultiParamTypeClasses
+      PolyKinds
       LambdaCase
-      DeriveGeneric
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveLift
-      DeriveTraversable
       DerivingStrategies
-      GeneralizedNewtypeDeriving
       StandaloneDeriving
-      BangPatterns
-      KindSignatures
-      TypeOperators
+      DeriveAnyClass
+      DeriveGeneric
+      DeriveDataTypeable
+      DeriveFunctor
+      DeriveFoldable
+      DeriveTraversable
+      DeriveLift
+      ImportQualifiedPost
+      StandaloneKindSignatures
+      DerivingVia
+      RoleAnnotations
       TypeApplications
       DataKinds
       TypeFamilies
-      UndecidableInstances
-      StandaloneKindSignatures
+      TypeOperators
+      BangPatterns
+      GADTs
+      DefaultSignatures
       RankNTypes
+      UndecidableInstances
+      MagicHash
       ScopedTypeVariables
   build-tool-depends:
       hspec-discover:hspec-discover >=2.7 && <2.10

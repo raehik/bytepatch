@@ -18,8 +18,18 @@ newtype HFunctorList fs a = HFunctorList { getHFunctorList :: Rec (Flap a) fs }
 deriving instance (ReifyConstraint Show (Flap a) fs, RMap fs, RecordToList fs) => Show (HFunctorList fs a)
 deriving instance Eq        (Rec (Flap a) fs) => Eq        (HFunctorList fs a)
 deriving instance Ord       (Rec (Flap a) fs) => Ord       (HFunctorList fs a)
-deriving instance Storable  (Rec (Flap a) fs) => Storable  (HFunctorList fs a)
 
+-- Right. I only partly get this. As I understand, I'm leveraging deriving via
+-- to generate the instance bodies, since they look the same as Rec but with a
+-- set functor. So I just have to assure it that you can make it Storable in the
+-- same way, given that @Flap a@ is storable (which is handled similarly at its
+-- own definition).
+deriving via (Rec (Flap a) '[])       instance Storable (HFunctorList '[] a)
+deriving via (Rec (Flap a) (f ': fs)) instance (Storable (f a), Storable (Rec (Flap a) fs)) => Storable (HFunctorList (f ': fs) a)
+
+-- It appears we can't do the same for 'Functor' etc., because the @a@ type
+-- variable isn't bound, but must be for us to say what type to derive via. I
+-- wonder if there is a workaround, but I can't figure it out.
 instance Functor (HFunctorList '[]) where
   fmap _ (HFunctorList RNil) = HFunctorList RNil
 instance (Functor r, Functor (HFunctorList rs)) => Functor (HFunctorList (r ': rs)) where
@@ -63,7 +73,7 @@ instance (Traversable r, Traversable (HFunctorList rs)) => Traversable (HFunctor
 --   Very useless - has no Functor nor Contravariant nor HFunctor instance.
 newtype Flap a f = Flap { getFlap :: f a }
     deriving stock   (Eq, Show, Ord, Generic)
-    deriving newtype (Storable)
+    deriving Storable via (f a)
 
 --------------------------------------------------------------------------------
 

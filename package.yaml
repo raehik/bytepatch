@@ -17,33 +17,46 @@ author: Ben Orchard
 # mostly Alexis King's 2018 recommended defaults
 # (most can be replaced with GHC 9.2's GHC2021 language extension
 default-extensions:
+# essential
 - EmptyCase
 - FlexibleContexts
 - FlexibleInstances
 - InstanceSigs
 - MultiParamTypeClasses
+- PolyKinds
 - LambdaCase
-- DeriveGeneric
-- DeriveFoldable
-- DeriveFunctor
-- DeriveGeneric
-- DeriveLift
-- DeriveTraversable
-- DerivingStrategies
-- GeneralizedNewtypeDeriving
-- StandaloneDeriving
-- BangPatterns
-- KindSignatures
-- TypeOperators
-- TypeApplications
 
-# we do a little type tomfoolery
+# deriving-related
+- DerivingStrategies
+- StandaloneDeriving
+- DeriveAnyClass
+- DeriveGeneric
+- DeriveDataTypeable
+- DeriveFunctor
+- DeriveFoldable
+- DeriveTraversable
+- DeriveLift
+
+# essential syntax but too recent
+- ImportQualifiedPost # 8.10
+- StandaloneKindSignatures # 8.10
+- DerivingVia # 8.6
+
+# less essential but still gimmes
+- RoleAnnotations
+- TypeApplications
 - DataKinds
 - TypeFamilies
-- UndecidableInstances
-- StandaloneKindSignatures
+- TypeOperators
+- BangPatterns
+- GADTs
+- DefaultSignatures
 - RankNTypes
-- ScopedTypeVariables
+
+# extra
+- UndecidableInstances # honestly fine but...
+- MagicHash # pretty much syntactic, but too weird
+- ScopedTypeVariables # probs dangerous to have as default
 
 # TODO 2022-02-02 locked out of GHC 9.2 by Vinyl not supporting it. Yikes
 # TODO 2022-03-30 Vinyl 0.14.1 supports GHC 9.2
