@@ -1,2 +1,8 @@
 resolver: nightly-2022-03-30
 packages: [.]
+
+extra-deps:
+- git: https://github.com/raehik/keystone
+  subdir: bindings/haskell
+  # can't select branch -- bindings-haskell-build-fix-include
+  commit: 93f1939eb08104f26b86cb9e8f4406808dd6c89d

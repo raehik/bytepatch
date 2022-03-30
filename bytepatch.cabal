@@ -36,6 +36,7 @@ library
       StreamPatch.Patch
       StreamPatch.Patch.Align
       StreamPatch.Patch.Binary
+      StreamPatch.Patch.Binary.Asm
       StreamPatch.Patch.Binary.PascalText
       StreamPatch.Patch.Linearize
       StreamPatch.Stream
@@ -77,11 +78,12 @@ library
       MagicHash
       ScopedTypeVariables
   build-depends:
-      aeson >=1.5 && <2.1
+      aeson ==2.0.*
     , base >=4.12 && <4.17
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.0.0 && <2.3
+    , generic-optics >=2.2.1.0 && <2.3
+    , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
@@ -131,12 +133,13 @@ executable bytepatch
       ScopedTypeVariables
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson >=1.5 && <2.1
+      aeson ==2.0.*
     , base >=4.12 && <4.17
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.0.0 && <2.3
+    , generic-optics >=2.2.1.0 && <2.3
+    , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
@@ -194,13 +197,14 @@ test-suite spec
       hspec-discover:hspec-discover >=2.7 && <2.10
   build-depends:
       QuickCheck >=2.14.2 && <2.15
-    , aeson >=1.5 && <2.1
+    , aeson ==2.0.*
     , base >=4.12 && <4.17
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.0.0 && <2.3
+    , generic-optics >=2.2.1.0 && <2.3
     , hspec >=2.7 && <2.10
+    , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5

@@ -3,7 +3,20 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    subdir: bindings/haskell
+    name: keystone
+    version: 0.1.1.0
+    git: https://github.com/raehik/keystone
+    pantry-tree:
+      size: 1195
+      sha256: 67bfd53a71a4258b77c432343acd855f913788a60e6d14d88a5802317cb2083c
+    commit: 93f1939eb08104f26b86cb9e8f4406808dd6c89d
+  original:
+    subdir: bindings/haskell
+    git: https://github.com/raehik/keystone
+    commit: 93f1939eb08104f26b86cb9e8f4406808dd6c89d
 snapshots:
 - completed:
     size: 539378

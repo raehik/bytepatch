@@ -1,6 +1,7 @@
 ## 0.4.0 (Unreleased)
   * clean up FunctorRec into standalone HFunctorList module
   * clean up HexBytestring into standalone module
+  * add assembly patching (just ARMv8 Thumb LE for now)
 
 ## 0.3.1 (2021-12-21)
   * packaging improvements (documentation, CI)

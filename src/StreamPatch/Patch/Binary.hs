@@ -90,8 +90,24 @@ patchBinRep (Patch a s ms) = do
 -- Some values may not have valid patch representations, for example if you're
 -- patching a 1-byte length-prefixed string and your string is too long (>255
 -- encoded bytes). Thus, 'toPatchRep' is failable.
+--
+-- TODO make this @Monad m => BinRep m a@ where @m@ specifies context. Pure
+-- non-failing can be @m@, pure failing can be @MonadError String m@,
+-- impure failing can be @(MonadIO m, MonadError String)@.
 class BinRep a where
-    toBinRep :: a -> Either String BS.ByteString
+    toBinRep   :: a -> Either String BS.ByteString
+    fromBinRep :: BS.ByteString -> Maybe a
+    fromBinRep = const Nothing
+    -- ^ Attempt to recover the "original" value from a bytestring.
+    --
+    -- Intended to be used for debugging. Our check functions compare converted
+    -- bytestrings, not @a@s. This should only be used if a bytestring
+    -- comparison fails, to recover a more human-readable error. (This is why we
+    -- only ask for a @Maybe@ -- we don't really care if the de-conversion
+    -- fails, so we just say "sorry" if it does.
+    --
+    -- To explain another way, this is like decompiling. The result we give may
+    -- be only one of many valid options.
 
 toBinRep' :: BinRep a => a -> Either (Error a) BS.ByteString
 toBinRep' a = mapLeft (ErrorBadBinRep a) $ toBinRep a
@@ -134,6 +150,8 @@ check cfg bs meta = do
             if   fromIntegral (BS.length bs') > n
             then Left $ ErrorBinRepTooLong bs' n
             else Right bs'
+    -- separate error constructor for length mismatch, perhaps? (meh, should be
+    -- obvious, but I was slow recognizing one time)
     checkExpected bs' bsExpected =
         case cfgAllowPartialExpected cfg of
           True  -> BS.isPrefixOf bs' bsExpected

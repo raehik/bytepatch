@@ -32,12 +32,13 @@ pCPatchDataType :: Parser CPatchDataType
 pCPatchDataType = option (maybeReader mapper) $
        long "type"
     <> short 't'
-    <> help "How to interpret & use patch data (binary/text/text-only)"
+    <> help "How to interpret & use patch data (binary/text/text-only/asm)"
     <> metavar "PATCH_TYPE"
   where mapper = \case "text-only" -> Just CTextPatch
                        "bin"       -> Just CBinPatch
                        "binary"    -> Just CBinPatch
                        "text"      -> Just CTextBinPatch
+                       "asm"       -> Just CAsmBinPatch
                        _           -> Nothing
 
 pCPatchAlign :: Parser CPatchAlign
