@@ -46,9 +46,10 @@ default-extensions:
 - ScopedTypeVariables
 
 # TODO 2022-02-02 locked out of GHC 9.2 by Vinyl not supporting it. Yikes
+# TODO 2022-03-30 Vinyl 0.14.1 supports GHC 9.2
 dependencies:
 - base >= 4.12 && < 4.17
-- vinyl ^>= 0.13.3
+- vinyl ^>= 0.14.1
 - mtl ^>= 2.2.2
 - bytestring >= 0.10 && < 0.12
 - text ^>= 1.2.4.1
@@ -72,7 +73,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - bytepatch
-    - optparse-applicative ^>= 0.16.1
+    - optparse-applicative ^>= 0.17
     - yaml ^>= 0.11.6.0
 
 tests:
