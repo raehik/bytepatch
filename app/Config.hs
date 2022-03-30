@@ -36,4 +36,5 @@ data CPatchDataType
   = CTextPatch      -- ^ Patch 'Text' over a 'Text' stream.
   | CBinPatch       -- ^ Patch bytestrings over a bytestream.
   | CTextBinPatch   -- ^ Patch 'Text' over a bytestream.
+  | CAsmBinPatch    -- ^ Patch ARMv8 Thumb (LE) assembly over a bytestream.
     deriving (Eq, Show, Generic)

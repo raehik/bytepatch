@@ -13,6 +13,7 @@ import           StreamPatch.Patch.Binary ( BinRep )
 import qualified StreamPatch.Apply as Apply
 import           BytePatch as BP
 import           Raehik.HexBytestring
+import           StreamPatch.Patch.Binary.Asm ( AsmInstr, Arch(..) )
 
 import qualified System.Exit as System
 import           Numeric.Natural
@@ -57,6 +58,7 @@ run = readPatchscript >>= processPatchScript >>= writePatched
           CTextPatch    -> processText psBs
           CBinPatch     -> processBin' @HexBytestring psBs
           CTextBinPatch -> processBin' @Text          psBs
+          CAsmBinPatch  -> processBin' @(AsmInstr 'ArchArmV8ThumbLE) psBs
 
     processText :: Bytes -> m Bytes
     processText psBs = do

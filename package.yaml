@@ -58,8 +58,6 @@ default-extensions:
 - MagicHash # pretty much syntactic, but too weird
 - ScopedTypeVariables # probs dangerous to have as default
 
-# TODO 2022-02-02 locked out of GHC 9.2 by Vinyl not supporting it. Yikes
-# TODO 2022-03-30 Vinyl 0.14.1 supports GHC 9.2
 dependencies:
 - base >= 4.12 && < 4.17
 - vinyl ^>= 0.14.1
@@ -68,9 +66,10 @@ dependencies:
 - text ^>= 1.2.4.1
 - megaparsec >= 9.0 && < 9.3
 - either ^>= 5.0.1.1
-- aeson >= 1.5 && < 2.1 # TODO 2021-12-02 Stack still no 2.0 . Urgh.
+- aeson ^>= 2.0
 - optics >= 0.3 && < 0.5
-- generic-optics ^>= 2.2.0.0 # TODO ^>= 2.2.1.0 when GHC 9.2
+- generic-optics ^>= 2.2.1.0
+- keystone ^>= 0.1.1.0
 
 library:
   source-dirs: src

@@ -1,0 +1,9 @@
+packages: .
+
+source-repository-package
+  type: git
+  location: https://github.com/raehik/keystone
+  --tag: bindings-haskell-build-fix-include
+  tag: 93f1939eb08104f26b86cb9e8f4406808dd6c89d
+  subdir:
+    bindings/haskell
