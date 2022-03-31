@@ -1,13 +1,25 @@
 # bytepatch
-A Haskell library and CLI tool for patching data in a stream, primarily aimed at
-handling byte-representable data. Write **patchscripts** (in-place edits to a
-file) using a convenient YAML format, and apply them with a safe patching
-algorithm. On the library side, define explicit patches over any type, apply
-them to pure/impure streams, and write further patch types and streams to extend
-as you desire.
+A Haskell library and CLI tool for patching data in a stream. Write
+**patchscripts** (in-place edits to a file) using a convenient YAML format, and
+apply them with a safe patching algorithm. On the library side, define explicit
+patches over any type, apply them to pure/impure streams, and write further
+patch types and streams to extend as you like.
 
-The executable is intended as a general tool for making simple binary editing
-more manageable. The codebase is really a fun investigation into some type-level
+bytepatch can handle a few different types of data (see `bytepatch --help`),
+including:
+
+  * Binary via pretty hex bytes `00 FF 1234`
+  * Binary via text, interpreted as null-terminated UTF-8 strings
+  * Binary via ARMv8 Thumb (LE) assembly (more possible, ask raehik)
+
+bytepatch is most useful when handling byte-representable data, but you can also
+apply patches of a given type over a stream of the same type -- for example, to
+patch a textual stream without considering the individual bytes, just the UTF-8
+characters.
+
+The executable is intended as a general tool for making simple binary/ASM
+editing more manageable. Over time, I think it's evolved into an actually useful
+little program. The codebase is really a fun investigation into some type-level
 Haskell features. Regardless of which you're interested in, I hope you might
 find some use from this project!
 
