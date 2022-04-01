@@ -1,10 +1,14 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module StreamPatch.HFunctorList where
 
-import           Data.Vinyl
-import           Data.Vinyl.TypeLevel ( RDelete )
-import           Control.Applicative  ( liftA2 )
-import           GHC.Generics         ( Generic )
-import           Foreign.Storable     ( Storable )
+import Data.Vinyl
+import Data.Vinyl.TypeLevel ( RDelete, RIndex )
+import Control.Applicative  ( liftA2 )
+import GHC.Generics         ( Generic )
+import Foreign.Storable     ( Storable )
+
+import Optics
 
 -- | A heterogeneous list of functors over 'a'. Each type in the list
 --   corresponds to a single value.
@@ -84,6 +88,25 @@ hflGet
     => HFunctorList fs a
     -> f a
 hflGet = getFlap . rget . getHFunctorList
+
+-- | Put a value at a type in an HFunctorList.
+hflPut
+    :: forall f f' fs fs' a
+    .  RecElem Rec f f' fs fs' (RIndex f fs)
+    => f' a
+    -> HFunctorList fs a
+    -> HFunctorList fs' a
+hflPut x = HFunctorList . rput' @_ @f (Flap x) . getHFunctorList
+
+-- | Get a lens to the value at a type in an HFunctorList.
+hflLens
+    :: forall f f' fs fs' a s t
+    .  ( RecElem Rec f f' fs fs' (RIndex f fs)
+       , RElem f fs (RIndex f fs)
+       , s ~ HFunctorList fs  a
+       , t ~ HFunctorList fs' a )
+    => Lens s t (f a) (f' a)
+hflLens = lens hflGet (\hfl x -> hflPut @f x hfl)
 
 -- | Use the value at a type in an HFunctorList, and remove it from the list.
 hflStrip

@@ -1,9 +1,12 @@
+{-# LANGUAGE OverloadedRecordDot #-}
+
 module CLI ( parse ) where
 
-import           Config
-import           Options.Applicative
-import           Control.Monad.IO.Class
-import qualified StreamPatch.Patch.Binary as Bin
+import Config
+import Options.Applicative
+import Control.Monad.IO.Class
+import StreamPatch.Patch.Binary qualified as Bin
+import StreamPatch.Patch.Compare qualified as Compare
 
 parse :: MonadIO m => m Config
 parse = execParserWithDefaults desc pConfig
@@ -11,10 +14,23 @@ parse = execParserWithDefaults desc pConfig
 
 pConfig :: Parser Config
 pConfig = Config
-    <$> strArgument (metavar "PATCHSCRIPT" <> help "Path to patchscript")
-    <*> pCStreamPair
-    <*> pCPatchFormat
-    <*> pPrintBinary
+    <$> pCPatchscriptFormat
+    <*> strArgument (metavar "PATCHSCRIPT" <> help "Path to patchscript")
+    <*> pCCmd
+
+pCCmd :: Parser CCmd
+pCCmd = hsubparser $
+       cmd' "patch"   descPatch   (CCmdPatch'   <$> pCCmdPatch)
+    <> cmd' "compile" descCompile (CCmdCompile' <$> pCCmdCompile)
+  where
+    descPatch   = "Apply patchscript to a stream."
+    descCompile = "\"Compile\" patchscript to a processed form."
+
+pCCmdPatch :: Parser CCmdPatch
+pCCmdPatch = CCmdPatch <$> pCStreamPair <*> pPrintBinary
+
+pCCmdCompile :: Parser CCmdCompile
+pCCmdCompile = pure CCmdCompile
 
 pCStreamPair :: Parser CStreamPair
 pCStreamPair = CStreamPair <$> pCSIn <*> pCSOut
@@ -25,8 +41,8 @@ pCStreamPair = CStreamPair <$> pCSIn <*> pCSOut
     pFileOpt = CStreamFile <$> strOption (metavar "FILE" <> long "out-file" <> short 'o' <> help "Output file")
     pStdin   = flag' CStreamStd (long "stdin"  <> help "Use stdin")
 
-pCPatchFormat :: Parser CPatchFormat
-pCPatchFormat = CPatchFormat <$> pCPatchDataType <*> pCPatchAlign <*> pBinCfg
+pCPatchscriptFormat :: Parser CPatchscriptFormat
+pCPatchscriptFormat = CPatchscriptFormat <$> pCPatchDataType <*> pCAlign <*> pCCompareVia
 
 pCPatchDataType :: Parser CPatchDataType
 pCPatchDataType = option (maybeReader mapper) $
@@ -42,22 +58,28 @@ pCPatchDataType = option (maybeReader mapper) $
                        "asms"      -> Just CAsmsBinPatch
                        _           -> Nothing
 
-pCPatchAlign :: Parser CPatchAlign
-pCPatchAlign = flag CNoAlignPatch CAlignPatch $
+pCAlign :: Parser CAlign
+pCAlign = flag CNoAlign CAlign $
        long "aligned"
     <> help "Parse alignment data"
-
-pBinCfg :: Parser Bin.Cfg
-pBinCfg = Bin.Cfg <$> pExactMatch
-  where
-    pExactMatch = flag True False $
-           long "match-exact"
-        <> help "Expected binary data must match exactly (rather than be a prefix)"
 
 pPrintBinary :: Parser Bool
 pPrintBinary = switch $
        long "print-binary"
     <> help "Force print binary to stdout"
+
+pCCompareVia :: Parser Compare.Via
+pCCompareVia = option (maybeReader mapper) $
+       long "compare"
+    <> short 'c'
+    <> help "Comparison strategy (equal/prefix/size/hashB3)"
+    <> metavar "COMPARISON_STRATEGY"
+  where mapper = \case "equal"  -> Just $ Compare.ViaEq Compare.Exact
+                       "prefix" -> Just $ Compare.ViaEq Compare.PrefixOf
+                       "size"   -> Just Compare.ViaSize
+                       "hashB3" -> Just $ Compare.ViaHash Compare.HashFuncB3
+                       _        -> Nothing
+
 
 --------------------------------------------------------------------------------
 
@@ -66,3 +88,7 @@ execParserWithDefaults :: MonadIO m => String -> Parser a -> m a
 execParserWithDefaults desc p = liftIO $ customExecParser
     (prefs $ showHelpOnError)
     (info (helper <*> p) (progDesc desc))
+
+-- | Shorthand for the way I always write commands.
+cmd' :: String -> String -> Parser a -> Mod CommandFields a
+cmd' name desc p = command name (info p (progDesc desc))

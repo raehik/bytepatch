@@ -5,78 +5,70 @@
 
 module StreamPatch.Patch.Binary
   ( Meta(..)
-  , MetaStream(..)
-  , Cfg(..)
+  , MetaPrep(..)
   , Error(..)
-  , patchBinRep
   , BinRep(..)
-  , toBinRep'
-  , check
+  , binRepify
   ) where
 
-import           StreamPatch.Patch
-import           StreamPatch.HFunctorList
+import StreamPatch.Patch
+import StreamPatch.HFunctorList
 
-import           GHC.Generics       ( Generic )
-import           GHC.Natural
-import qualified Data.ByteString    as BS
-import qualified Data.Text.Encoding as Text
-import qualified Data.Text          as Text
-import           Data.Text          ( Text )
-import           Data.Either.Combinators
-import           Data.Vinyl
-import           Data.Functor.Const
-import           Data.Vinyl.TypeLevel
+import GHC.Generics       ( Generic )
+import GHC.Natural
+import Data.ByteString qualified as BS
+import Data.Text.Encoding qualified as Text
+import Data.Text qualified as Text
+import Data.Text ( Text )
+import Data.Vinyl
+import Data.Functor.Const
+import Data.Vinyl.TypeLevel
 
-data Meta = Meta
-  { mMaxBytes :: Maybe (SeekRep 'FwdSeek)
-  -- ^ Maximum number of bytes permitted to write at the associated position.
-  } deriving (Eq, Show, Generic)
-
-data MetaStream a = MetaStream
-  { msNullTerminates :: Maybe (SeekRep 'FwdSeek)
+data Meta a = Meta
+  { mNullTerminates :: Maybe (SeekRep 'FwdSeek)
   -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
+  } deriving (Generic, Eq, Show, Functor, Foldable, Traversable)
 
-  , msExpected       :: Maybe a
-  -- ^ Stream segment should be this.
-  } deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
-
-data Cfg = Cfg
-  { cfgAllowPartialExpected :: Bool
-  -- ^ If enabled, allow partial expected bytes checking. If disabled, then even
-  --   if the expected bytes are a prefix of the actual, fail.
+data MetaPrep = MetaPrep
+  { mpMaxBytes :: Maybe (SeekRep 'FwdSeek)
+  -- ^ Maximum bytelength of binrepped data.
+  --
+  -- Though binrepping is a safe operation, this is a useful sanity check in
+  -- cases where you know the maximum space available.
+  --
+  -- Note that this is only available for the patch data, not other meta data.
+  -- (If you want that, you'll need to shove this field into the patch type.)
+  -- itself. Probably not very useful.)
   } deriving (Eq, Show, Generic)
 
 data Error a
-  = ErrorBadBinRep a String
-  | ErrorUnexpectedNonNull BS.ByteString
-  | ErrorDidNotMatchExpected BS.ByteString BS.ByteString
-  | ErrorBinRepTooLong BS.ByteString Natural
+  = ErrorBinRepOverlong Natural Natural a BS.ByteString
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
-patchBinRep
-    :: forall a s ss i is r rs
+binRepify
+    :: forall a s ss is r rs
     .  ( BinRep a
        , Traversable (HFunctorList rs)
-       , r ~ Const Meta
+       , r ~ Const MetaPrep
        , rs ~ RDelete r ss
-       , RElem r ss i
+       , RElem r ss (RIndex r ss)
        , RSubset rs ss is )
     => Patch s ss a
     -> Either (Error a) (Patch s rs BS.ByteString)
-patchBinRep (Patch a s ms) = do
-    a' <- toBinRep' a
-    let (metaCheck, ms') = hflStrip (checkMeta a' . getConst) ms
+binRepify (Patch a s ms) = do
+    let bs = toBinRep a
+        (metaCheck, ms') = hflStrip (checkMeta bs . getConst) ms
     metaCheck
-    ms'' <- traverse toBinRep' ms'
-    return $ Patch a' s ms''
+    let ms'' = fmap toBinRep ms'
+    return $ Patch bs s ms''
   where
-    checkMeta a' m = case mMaxBytes m of
-                       Nothing       -> return ()
-                       Just maxBytes ->
-                         if   BS.length a' > fromIntegral maxBytes
-                         then Left $ ErrorBinRepTooLong a' maxBytes
-                         else return ()
+    checkMeta bs m =
+        case mpMaxBytes m of
+          Nothing       -> return ()
+          Just maxBytes ->
+            if   BS.length bs > fromIntegral maxBytes
+            then Left $ ErrorBinRepOverlong (fromIntegral (BS.length bs)) maxBytes a bs
+            else return ()
 
 -- | Type has a binary representation for using in patchscripts.
 --
@@ -94,8 +86,11 @@ patchBinRep (Patch a s ms) = do
 -- TODO make this @Monad m => BinRep m a@ where @m@ specifies context. Pure
 -- non-failing can be @m@, pure failing can be @MonadError String m@,
 -- impure failing can be @(MonadIO m, MonadError String)@.
+--
+-- TODO No! This should NOT be failable! My refined stuff from gtvm-hs will fix
+-- this. I do everything in data, and redefine this class as pure convenience.
 class BinRep a where
-    toBinRep   :: a -> Either String BS.ByteString
+    toBinRep   :: a -> BS.ByteString
     fromBinRep :: BS.ByteString -> Maybe a
     fromBinRep = const Nothing
     -- ^ Attempt to recover the "original" value from a bytestring.
@@ -106,53 +101,16 @@ class BinRep a where
     -- only ask for a @Maybe@ -- we don't really care if the de-conversion
     -- fails, so we just say "sorry" if it does.
     --
-    -- To explain another way, this is like decompiling. The result we give may
-    -- be only one of many valid options.
-
-toBinRep' :: BinRep a => a -> Either (Error a) BS.ByteString
-toBinRep' a = mapLeft (ErrorBadBinRep a) $ toBinRep a
+    -- To explain another way, to is printing (1), from is parsing (0-many).
 
 -- | Bytestrings are copied as-is.
 instance BinRep BS.ByteString where
-    toBinRep = Right . id
+    toBinRep = id
 
 -- | Text is converted to UTF-8 bytes and null-terminated.
 instance BinRep Text where
-    toBinRep = Right . flip BS.snoc 0x00 . Text.encodeUtf8
+    toBinRep = flip BS.snoc 0x00 . Text.encodeUtf8
 
 -- | String is the same but goes the long way round, through Text.
 instance BinRep String where
     toBinRep = toBinRep . Text.pack
-
-check :: BinRep a => Cfg -> BS.ByteString -> MetaStream a -> Either (Error a) ()
-check cfg bs meta = do
-    case msExpected meta of
-      Nothing -> Right ()
-      Just aExpected -> do
-        bsExpected <- checkInner aExpected Nothing -- cheating a bit here
-        case msNullTerminates meta of
-          Nothing -> check' bs bsExpected
-          Just nullsFrom ->
-            let (bs', bsNulls) = BS.splitAt (fromIntegral nullsFrom) bs
-             in if   bsNulls == BS.replicate (BS.length bsNulls) 0x00
-                then check' bs' bsExpected
-                else Left $ ErrorUnexpectedNonNull bs
-  where
-    check' bs' bsExpected =
-        case checkExpected bs' bsExpected of
-          True  -> Right ()
-          False -> Left $ ErrorDidNotMatchExpected bs' bsExpected
-    checkInner a mn = do
-        bs' <- toBinRep' a
-        case mn of
-          Nothing -> Right bs'
-          Just n  ->
-            if   fromIntegral (BS.length bs') > n
-            then Left $ ErrorBinRepTooLong bs' n
-            else Right bs'
-    -- separate error constructor for length mismatch, perhaps? (meh, should be
-    -- obvious, but I was slow recognizing one time)
-    checkExpected bs' bsExpected =
-        case cfgAllowPartialExpected cfg of
-          True  -> BS.isPrefixOf bs' bsExpected
-          False -> bs' == bsExpected

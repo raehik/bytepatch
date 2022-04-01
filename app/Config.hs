@@ -1,18 +1,31 @@
 module Config where
 
-import           GHC.Generics ( Generic )
-import qualified StreamPatch.Patch.Binary as Bin
+import GHC.Generics ( Generic )
+import StreamPatch.Patch.Compare qualified as Compare
 
 data Config = Config
-  { cfgPatchscript :: FilePath
-  , cfgStreamPair  :: CStreamPair
-  , cfgPatchFormat :: CPatchFormat
-  , cfgPrintBinary :: Bool
+  { patchscriptFormat :: CPatchscriptFormat
+  , patchscriptPath   :: FilePath
+  , cmd               :: CCmd
   } deriving (Eq, Show, Generic)
 
+data CCmd
+  = CCmdPatch' CCmdPatch
+  | CCmdCompile' CCmdCompile
+    deriving (Eq, Show, Generic)
+
+data CCmdPatch = CCmdPatch
+  { streamPair  :: CStreamPair
+  , printBinary :: Bool
+  } deriving (Eq, Show, Generic)
+
+-- TODO
+data CCmdCompile = CCmdCompile
+    deriving (Eq, Show, Generic)
+
 data CStreamPair = CStreamPair
-  { cStreamPairIn  :: CStream
-  , cStreamPairOut :: CStream
+  { streamIn  :: CStream
+  , streamOut :: CStream
   } deriving (Eq, Show, Generic)
 
 -- | "Single file" stream.
@@ -21,15 +34,15 @@ data CStream
   | CStreamStd
     deriving (Eq, Show, Generic)
 
-data CPatchFormat = CPatchFormat
-  { cpfDataType :: CPatchDataType
-  , cpfAlign    :: CPatchAlign
-  , cpfBinCfg   :: Bin.Cfg
+data CPatchscriptFormat = CPatchscriptFormat
+  { dataType :: CPatchDataType
+  , align    :: CAlign
+  , compare  :: Compare.Via
   } deriving (Eq, Show, Generic)
 
-data CPatchAlign
-  = CAlignPatch     -- ^ Patch has alignment data.
-  | CNoAlignPatch   -- ^ Patch does not have alignment data.
+data CAlign
+  = CAlign   -- ^ Patch has alignment data.
+  | CNoAlign -- ^ Patch does not have alignment data.
     deriving (Eq, Show, Generic)
 
 data CPatchDataType

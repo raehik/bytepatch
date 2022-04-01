@@ -50,7 +50,7 @@ class Target arch where
     disassembleInstr :: Natural -> MachineInstr arch -> Either Error (AsmInstr     arch)
 
 data Error
-  = ErrorOther String
+  = ErrorAsm String
     deriving (Generic, Eq, Show)
 
 -- TODO should be same list size. Change to sized Vector?
@@ -75,12 +75,12 @@ instance Target 'ArchArmV8ThumbLE where
                                       . getAsmInstr
 
 -- single instr
-instance Target arch => BinRep (AsmInstr arch) where
-    toBinRep = mapEitherShow getMachineInstr . assembleInstr
+instance Target arch => BinRep (MachineInstr arch) where
+    toBinRep = getMachineInstr
 
 -- multiple instrs
-instance Target arch => BinRep [AsmInstr arch] where
-    toBinRep = mapEitherShow (BS.concat . map getMachineInstr) . assemble
+instance Target arch => BinRep [MachineInstr arch] where
+    toBinRep = BS.concat . map getMachineInstr
 
 mapEitherShow :: Show a => (b -> c) -> Either a b -> Either String c
 mapEitherShow f = either (Left . show) (Right . f)
@@ -111,4 +111,4 @@ assemble' arch modes inst = do
               1 -> return mc
               _ -> err $ "expected to assemble 1 instr, but assembled "<>show count
   where
-    err = throwError . ErrorOther
+    err = throwError . ErrorAsm

@@ -37,7 +37,7 @@ library
       StreamPatch.Patch.Align
       StreamPatch.Patch.Binary
       StreamPatch.Patch.Binary.Asm
-      StreamPatch.Patch.Binary.PascalText
+      StreamPatch.Patch.Compare
       StreamPatch.Patch.Linearize
       StreamPatch.Stream
       StreamPatch.Util
@@ -80,11 +80,13 @@ library
   build-depends:
       aeson ==2.0.*
     , base >=4.12 && <4.17
+    , blake3 ==0.2.*
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
     , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
+    , memory
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , text >=1.2.4.1 && <1.3
@@ -95,6 +97,7 @@ executable bytepatch
   main-is: Main.hs
   other-modules:
       CLI
+      Compile
       Config
       Paths_bytepatch
   hs-source-dirs:
@@ -135,12 +138,14 @@ executable bytepatch
   build-depends:
       aeson ==2.0.*
     , base >=4.12 && <4.17
+    , blake3 ==0.2.*
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
     , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
+    , memory
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , optparse-applicative ==0.17.*
@@ -199,6 +204,7 @@ test-suite spec
       QuickCheck >=2.14.2 && <2.15
     , aeson ==2.0.*
     , base >=4.12 && <4.17
+    , blake3 ==0.2.*
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
@@ -206,6 +212,7 @@ test-suite spec
     , hspec >=2.7 && <2.10
     , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
+    , memory
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , text >=1.2.4.1 && <1.3
