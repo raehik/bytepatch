@@ -70,6 +70,8 @@ dependencies:
 - optics >= 0.3 && < 0.5
 - generic-optics ^>= 2.2.1.0
 - keystone ^>= 0.1.1.0
+- blake3 ^>= 0.2
+- memory # TODO
 
 library:
   source-dirs: src

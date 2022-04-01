@@ -6,3 +6,4 @@ extra-deps:
   subdir: bindings/haskell
   # can't select branch -- bindings-haskell-build-fix-include
   commit: 93f1939eb08104f26b86cb9e8f4406808dd6c89d
+- blake3-0.2@sha256:d1146b9a51ccfbb0532780778b6d016a614e3d44c05d8c1923dde9a8be869045,2448

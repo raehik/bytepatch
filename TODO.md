@@ -1,14 +1,20 @@
+Fixes:
+
+  * Compile -> Normalize
+
 Features:
 
+  * Actually use processed patches (currently can't select whether to linearize,
+    or just read fwdseeks from the get-go)
   * Concat patches
     * only really for performance. cba because I can just pipe things
-  * Process patches without applying
-    * Especially, convert exacts to hashes!
 
 Improvements:
 
   * Combined tests
   * QuickCheck tests (a pain...)
+  * Errors via union types. Because my types are so good now, we can delimit
+    what sort of errors are possible for different usages.
 
 Thoughts:
 

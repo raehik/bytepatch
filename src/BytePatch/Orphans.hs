@@ -11,7 +11,7 @@ import           Text.Megaparsec            ( parseMaybe )
 import           Data.Aeson
 
 instance BinRep HexBytestring where
-    toBinRep = Right . unHexBytestring
+    toBinRep = unHexBytestring
 
 instance FromJSON HexBytestring where
     parseJSON = withText "hex bytestring" $ \t ->

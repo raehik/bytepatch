@@ -72,7 +72,6 @@ jobs:
       matrix:
         cabal: ["3.6"]  # ghcup recommended as of 2021-12-02
         ghc:
-        - "8.10"
         - "9.2"
 
     steps:
