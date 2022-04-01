@@ -59,6 +59,7 @@ run = readPatchscript >>= processPatchScript >>= writePatched
           CBinPatch     -> processBin' @HexBytestring psBs
           CTextBinPatch -> processBin' @Text          psBs
           CAsmBinPatch  -> processBin' @(AsmInstr 'ArchArmV8ThumbLE) psBs
+          CAsmsBinPatch -> processBin' @[AsmInstr 'ArchArmV8ThumbLE] psBs
 
     processText :: Bytes -> m Bytes
     processText psBs = do

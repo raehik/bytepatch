@@ -39,6 +39,7 @@ pCPatchDataType = option (maybeReader mapper) $
                        "binary"    -> Just CBinPatch
                        "text"      -> Just CTextBinPatch
                        "asm"       -> Just CAsmBinPatch
+                       "asms"      -> Just CAsmsBinPatch
                        _           -> Nothing
 
 pCPatchAlign :: Parser CPatchAlign

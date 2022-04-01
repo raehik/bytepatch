@@ -20,6 +20,9 @@ import StreamPatch.Patch.Binary ( BinRep(..) )
 
 import Data.Aeson qualified as Aeson
 
+import Control.Monad.IO.Class
+import Control.Monad.Except
+
 data Arch
   = ArchArmV8ThumbLE
     deriving (Generic, Eq, Show)
@@ -64,32 +67,48 @@ disassemble initAddr = traverse (uncurry disassembleInstr) . go initAddr []
 
 -- TODO arbitrarily using unsafeDupablePerformIO
 instance Target 'ArchArmV8ThumbLE where
-    assembleInstr = fmap MachineInstr . unsafeDupablePerformIO
+    assembleInstr = fmap MachineInstr
+                                      . unsafeDupablePerformIO
+                                      . runExceptT
                                       . assemble' Keystone.ArchArm [Keystone.ModeV8, Keystone.ModeThumb, Keystone.ModeLittleEndian]
                                       . Text.unpack
                                       . getAsmInstr
 
 -- single instr
 instance Target arch => BinRep (AsmInstr arch) where
-    toBinRep inst = case assembleInstr inst of
-                      Left  err -> Left $ show err
-                      Right out -> Right $ getMachineInstr out
+    toBinRep = mapEitherShow getMachineInstr . assembleInstr
 
+-- multiple instrs
+instance Target arch => BinRep [AsmInstr arch] where
+    toBinRep = mapEitherShow (BS.concat . map getMachineInstr) . assemble
+
+mapEitherShow :: Show a => (b -> c) -> Either a b -> Either String c
+mapEitherShow f = either (Left . show) (Right . f)
+
+-- | Helper for assembling a single instruction for some architecture &
+--   configuration.
+--
+-- Note that you can pass more than one instruction by using @;@ or @\n@ as
+-- separators. But we choose to limit that syntax, by checking that the a valid
+-- result is only 1 instruction long.
 assemble'
-    :: Keystone.Architecture -> [Keystone.Mode]
+    :: (MonadIO m, MonadError Error m)
+    => Keystone.Architecture -> [Keystone.Mode]
     -> String
-    -> IO (Either Error BS.ByteString)
+    -> m BS.ByteString
 assemble' arch modes inst = do
     let as' = Keystone.open arch modes
-    Keystone.runAssembler as' >>= \case
+    liftIO (Keystone.runAssembler as') >>= \case
       Left  e  -> err $ "failed to obtain assembler: "<>show e
       Right as -> do
         let out' = Keystone.assemble as [inst] Nothing
         -- TODO have to inspect engine to find error. probably say if x=1 OK, if
         -- x>1 weird error, if x<1 check errno->strerror
-        Keystone.runAssembler out' >>= \case
+        liftIO (Keystone.runAssembler out') >>= \case
           Left e -> err $ "error while assembling: "<>show e
-          Right (mc :: BS.ByteString, 1) -> return $ Right mc
-          Right (mc, x) -> err $ "expected to assemble 1 instr, but assembled "<>show x
+          Right (mc, count) ->
+            case count of
+              1 -> return mc
+              _ -> err $ "expected to assemble 1 instr, but assembled "<>show count
   where
-    err = return . Left . ErrorOther
+    err = throwError . ErrorOther

@@ -2,6 +2,8 @@ Features:
 
   * Concat patches
     * only really for performance. cba because I can just pipe things
+  * Process patches without applying
+    * Especially, convert exacts to hashes!
 
 Improvements:
 
