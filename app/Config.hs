@@ -2,6 +2,7 @@ module Config where
 
 import GHC.Generics ( Generic )
 import StreamPatch.Patch.Compare qualified as Compare
+import StreamPatch.Patch ( SeekKind )
 
 data Config = Config
   { patchscriptFormat :: CPatchscriptFormat
@@ -38,6 +39,7 @@ data CPatchscriptFormat = CPatchscriptFormat
   { dataType :: CPatchDataType
   , align    :: CAlign
   , compare  :: Compare.Via
+  , seek     :: SeekKind
   } deriving (Eq, Show, Generic)
 
 data CAlign
