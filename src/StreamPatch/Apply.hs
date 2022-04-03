@@ -19,9 +19,8 @@ import StreamPatch.Stream
 import StreamPatch.Patch
 import StreamPatch.HFunctorList
 import StreamPatch.Patch.Binary qualified as Bin
-import StreamPatch.Patch.Binary ( BinRep )
 import StreamPatch.Patch.Compare qualified as Compare
-import StreamPatch.Patch.Compare ( Compare(..), CompareRep, Via(..), EqualityCheck(..), HashFunc(..), compareTo )
+import StreamPatch.Patch.Compare ( Compare(..), compareTo )
 import StreamPatch.Patch.Linearize ( HasLength, getLength )
 
 import Data.Vinyl
@@ -32,7 +31,6 @@ import Control.Monad.State
 import StreamPatch.Util ( traverseM_ )
 
 import Control.Monad.Except
-import Data.Either.Combinators ( mapLeft )
 
 data Error
   = ErrorCompare String
@@ -40,7 +38,7 @@ data Error
     deriving (Generic, Eq, Show)
 
 applyBinCompareFwd
-    :: forall a m v. (MonadFwdInplaceStream m, Compare v BS.ByteString, Chunk m ~ BS.ByteString)
+    :: forall m v. (MonadFwdInplaceStream m, Compare v BS.ByteString, Chunk m ~ BS.ByteString)
     => [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] BS.ByteString]
     -> m (Either Error ())
 applyBinCompareFwd = traverseM_ $ \(Patch bs s (HFunctorList (Flap cm :& Flap bm :& RNil))) -> runExceptT $ do

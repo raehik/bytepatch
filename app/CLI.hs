@@ -7,6 +7,7 @@ import Options.Applicative
 import Control.Monad.IO.Class
 import StreamPatch.Patch.Binary qualified as Bin
 import StreamPatch.Patch.Compare qualified as Compare
+import StreamPatch.Patch ( SeekKind(..) )
 
 parse :: MonadIO m => m Config
 parse = execParserWithDefaults desc pConfig
@@ -42,7 +43,21 @@ pCStreamPair = CStreamPair <$> pCSIn <*> pCSOut
     pStdin   = flag' CStreamStd (long "stdin"  <> help "Use stdin")
 
 pCPatchscriptFormat :: Parser CPatchscriptFormat
-pCPatchscriptFormat = CPatchscriptFormat <$> pCPatchDataType <*> pCAlign <*> pCCompareVia
+pCPatchscriptFormat = CPatchscriptFormat <$> pCPatchDataType
+                                         <*> pCAlign
+                                         <*> pCCompareVia
+                                         <*> pSeekKind
+
+pSeekKind :: Parser SeekKind
+pSeekKind = option (maybeReader mapper) $
+       long "seek"
+    <> short 's'
+    <> help "Seek type (abs/fwd/rel)"
+    <> metavar "SEEK_TYPE"
+  where mapper = \case "abs" -> Just AbsSeek
+                       "fwd" -> Just FwdSeek
+                       "rel" -> Just RelSeek
+                       _     -> Nothing
 
 pCPatchDataType :: Parser CPatchDataType
 pCPatchDataType = option (maybeReader mapper) $

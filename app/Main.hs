@@ -173,7 +173,7 @@ runBinCompareFwd
        , FromJSON a, BinRep b, Show b
        )
     => CPatchscriptFormat -> CCmd -> Bytes
-    -> (forall fs. Traversable (HFunctorList fs) => [Patch 'AbsSeek fs a] -> m [Patch 'AbsSeek fs b])
+    -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
     -> m ()
 runBinCompareFwd psfmt cmd' bs preBinRep =
     case psfmt.align of
@@ -191,18 +191,31 @@ runBinCompareFwd psfmt cmd' bs preBinRep =
               let ps' = map (Compile.compilePatch @('ViaHash 'HashFuncB3)) ps
                   ps'' = fmap (fmap HexBytestring . convertBackBin) ps'
               liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps''
-        ViaHash HashFuncB3 -> do
-          ps <-     processDecode bs
-                >>= return . concat . map (BP.convertBin @'AbsSeek)
-                >>= preBinRep
-                >>= processBin @b
-                >>= processLinearize
-          case cmd' of
-            CCmdPatch'   cfgPatch   ->
-              cmdPatchBinCompareFwd @('ViaHash 'HashFuncB3) cfgPatch ps
-            CCmdCompile' _cfgCompile -> do
-              let ps' = fmap (fmap HexBytestring . convertBackBin) ps
-              liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
+        ViaHash HashFuncB3 -> case psfmt.seek of
+          AbsSeek -> do
+              ps <-     processDecode bs
+                    >>= return . concat . map (BP.convertBin @'AbsSeek)
+                    >>= preBinRep
+                    >>= processBin @b
+                    >>= processLinearize
+              case cmd' of
+                CCmdPatch'   cfgPatch   ->
+                  cmdPatchBinCompareFwd @('ViaHash 'HashFuncB3) cfgPatch ps
+                CCmdCompile' _cfgCompile -> do
+                  let ps' = fmap (fmap HexBytestring . convertBackBin) ps
+                  liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
+          FwdSeek -> do
+              ps <-     processDecode bs
+                    >>= return . concat . map BP.convertBin
+                    >>= preBinRep
+                    >>= processBin @b
+              case cmd' of
+                CCmdPatch'   cfgPatch   ->
+                  cmdPatchBinCompareFwd @('ViaHash 'HashFuncB3) cfgPatch ps
+                CCmdCompile' _cfgCompile -> do
+                  let ps' = fmap (fmap HexBytestring . convertBackBin) ps
+                  liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
+          _ -> throwError $ ErrorUnimplemented
         _ -> throwError $ ErrorUnimplemented
       CAlign -> case psfmt.compare of
         ViaEq Exact -> do
