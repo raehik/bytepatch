@@ -1,14 +1,3 @@
-{-
-TODO
-
-  * Note that we can write applies for BS.ByteString and still ask for Bin.Meta
-    and Compare.Meta. These would be for when we binrepify in advance, and want
-    the type guarantee that we can't generate binrep-related errors. However, I
-    cba, because it's only peace of mind. When we binrepify in advance then use
-    the generic BinRep applier, the binrepifying is just @Right@. (lol, just
-    right)
--}
-
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 module StreamPatch.Apply where

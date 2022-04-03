@@ -78,17 +78,6 @@ binRepify (Patch a s ms) = do
 -- some important patch generation behaviour in one place. Similarly to Aeson,
 -- if you require custom behaviour for existing types (e.g. length-prefixed
 -- strings instead of C-style null terminated), define a newtype over it.
---
--- Some values may not have valid patch representations, for example if you're
--- patching a 1-byte length-prefixed string and your string is too long (>255
--- encoded bytes). Thus, 'toPatchRep' is failable.
---
--- TODO make this @Monad m => BinRep m a@ where @m@ specifies context. Pure
--- non-failing can be @m@, pure failing can be @MonadError String m@,
--- impure failing can be @(MonadIO m, MonadError String)@.
---
--- TODO No! This should NOT be failable! My refined stuff from gtvm-hs will fix
--- this. I do everything in data, and redefine this class as pure convenience.
 class BinRep a where
     toBinRep   :: a -> BS.ByteString
     fromBinRep :: BS.ByteString -> Maybe a
@@ -108,9 +97,17 @@ instance BinRep BS.ByteString where
     toBinRep = id
 
 -- | Text is converted to UTF-8 bytes and null-terminated.
+--
+-- TODO this needs to go. See gtvm-hs, @Str (rep :: StrRep)@.
 instance BinRep Text where
     toBinRep = flip BS.snoc 0x00 . Text.encodeUtf8
 
 -- | String is the same but goes the long way round, through Text.
+--
+-- TODO blegh. throw it out.
 instance BinRep String where
     toBinRep = toBinRep . Text.pack
+
+-- Now, we *could* write @instance BinRep a => BinRep [a]@ using @concat@. But
+-- I'm not certain it's always wanted. It works and is useful for
+-- @Asm.MachineInstr arch@. Can't think how what it would mean for other types.

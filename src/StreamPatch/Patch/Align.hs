@@ -28,11 +28,11 @@ deriving instance (Show (SeekRep s)) => Show (Error s)
 
 -- | Attempt to align the given patch to 0 using the given base.
 align
-    :: forall s a ss i is r rs
+    :: forall s a ss is r rs
     .  ( SeekRep s ~ Natural
        , r ~ Const (Meta s)
        , rs ~ RDelete r ss
-       , RElem r ss i
+       , RElem r ss (RIndex r ss)
        , RSubset rs ss is )
     => SeekRep 'RelSeek
     -> Patch 'RelSeek ss a
