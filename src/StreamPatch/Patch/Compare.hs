@@ -51,14 +51,14 @@ instance Functor     (Meta ('ViaHash h)) where
 instance Foldable    (Meta ('ViaHash p)) where
     foldMap _ = const mempty
 instance Traversable (Meta ('ViaHash p)) where
-    traverse f (Meta c) = pure $ Meta c
+    traverse _ (Meta c) = pure $ Meta c
 
 instance Functor     (Meta 'ViaSize) where
     fmap _ (Meta c) = Meta c
 instance Foldable    (Meta 'ViaSize) where
     foldMap _ = const mempty
 instance Traversable (Meta 'ViaSize) where
-    traverse f (Meta c) = pure $ Meta c
+    traverse _ (Meta c) = pure $ Meta c
 
 -- | How should we compare two values?
 data Via

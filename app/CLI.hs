@@ -5,7 +5,6 @@ module CLI ( parse ) where
 import Config
 import Options.Applicative
 import Control.Monad.IO.Class
-import StreamPatch.Patch.Binary qualified as Bin
 import StreamPatch.Patch.Compare qualified as Compare
 import StreamPatch.Patch ( SeekKind(..) )
 
