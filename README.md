@@ -1,21 +1,29 @@
 # bytepatch
 A Haskell library and CLI tool for patching data in a stream. Write
-**patchscripts** (in-place edits to a file) using a convenient YAML format, and
-apply them with a safe patching algorithm. On the library side, define explicit
-patches over any type, apply them to pure/impure streams, and write further
-patch types and streams to extend as you like.
+**patchscripts** (in-place edits to a file) using a convenient YAML schema, and
+apply them with a safe patching algorithm. On the library side, define patches
+of various forms over any type, apply them to pure/impure streams, and write
+further patch data types and streams to extend as you like.
 
-bytepatch can handle a few different types of data (see `bytepatch --help`),
-including:
+bytepatch works with many data types:
 
-  * Binary via pretty hex bytes `00 FF 1234`
-  * Binary via text, interpreted as null-terminated UTF-8 strings
-  * Binary via ARMv8 Thumb (LE) assembly (more possible, ask raehik)
+  * read pretty binary `00 FF 1234`, parse to bytes
+  * read text, interpret as null-terminated UTF-8 string
+  * read assembly, assemble down to machine code
 
-bytepatch is most useful when handling byte-representable data, but you can also
-apply patches of a given type over a stream of the same type -- for example, to
-patch a textual stream without considering the individual bytes, just the UTF-8
-characters.
+The schema itself is also configurable:
+
+  * align: add a value (set in patch file) to each patch offset
+  * compare: bytepatch can check expected data against actual during patching,
+    to assert that you're patching the expected file. You can select how this
+    check works: compare equality, or compare hashes
+  * seek type: what the patch offsets mean. You'll likely want absolute
+    offsets - but you may also write them as linear offsets, forward from the
+    previous.
+
+You may also ask bytepatch to *compile* a patchscript, which reads it and then
+outputs a YAML file with a simplified schema: pre-aligned, compare via hashes,
+forward seeks.
 
 The executable is intended as a general tool for making simple binary/ASM
 editing more manageable. Over time, I think it's evolved into an actually useful
@@ -26,20 +34,27 @@ find some use from this project!
 ## What?
 If you're modifying binaries, you often end up needing to make edits in a hex
 editor. This is fun for a very short while, then you realise how easy it is to
-mess up. bytepatch provides a simple, human read-writeable format for defining
-such edits, and can apply them for you.
+mess up.
 
-bytepatch is intended as a developer tool for writing a *static patchscript*.
-It's not a binary patch tool like IPS, BPS: these take an input and a result
-file, and generate a patch file that can be applied to the input in order to
-recreate the result. By itself, the patch file isn't useful, being instructions
-to the tool telling how to edit the input file. bytepatch uses a human-readable
-patch file format that describes in plain terms the edits to make, so developers
-can read and write patches in a structured, useable format.
+bytepatch is primarily intended as a developer tool for writing a
+*human-friendly static patchscript*. It provides a nice schema for defining
+edits to a binary file, so that developers can read and write patches in a
+structured, readable format. If one wanted, they could very easily read the
+patch file and use it to make the changes manually (though bytepatch wants to do
+this for you).
+
+bytepatch is not aimed at replacing binary patch tools such as IPS, BPS: these
+take an input and a result file, and generate a patch file that can be applied
+to the input in order to recreate the result. You need the result file in the
+first place. These tools both generate the patch file and apply it; bytepatch
+only applies the patch file, and leaves the writing to the user.
 
 ## When might I want to use this?
 You might find bytepatch useful if you want to define edits to be made on binary
-files (especially executables) that are *static* and *in-place*.
+files (especially executables) that are *static* and *in-place*. Examples are:
+
+  * instruction patching (via assembly)
+  * string patching (via text)
 
 ### Less relevant use cases
 You can't use bytepatch directly for edits which are dynamic in nature (e.g.
@@ -54,18 +69,6 @@ replace would introduce issues for following edits: do we use the original
 offset, or do we implicitly shift them so they still write to the "same place"?
 There *is* some support in the library for such edits, however, and it would be
 interesting to explore.
-
-### Original rationale
-I'm working on some binary files, and need to patch strings, machine code and
-other data. I make some changes, I test them, they work. Then I note down the
-changes I made. It's tedious and repetitive, but I really don't want to lose
-track of what got changed how, and it's the clearest way to share my work
-others. But if I want to test more stuff, I may have to make those changes
-again. I'm gonna make a mistake eventually.
-
-Instead, I described my patches in YAML and wrote a tool to apply them. Now my
-changes and my notes (thanks YAML comments!) are the same file, which can be
-checked for correctness and applied automatically.
 
 ## License
 Provided under the MIT license. Please see `LICENSE` for the full license text.
