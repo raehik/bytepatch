@@ -32,12 +32,36 @@ import Text.Megaparsec.Char.Lexer qualified as MCL
 import BLAKE3 qualified as B3
 import Data.ByteArray qualified as BA
 
+-- | What sort of equality check to do.
+data EqualityCheck
+  = Exact -- ^ "Exact equality" is defined as whatever the 'Eq' class does. (lol)
+  | PrefixOf
+    deriving stock (Generic, Eq, Show)
+
+data HashFunc
+  = HashFuncB3
+  | HashFuncSHA256
+  | HashFuncMD5
+    deriving stock (Generic, Eq, Show)
+
+-- | How should we compare two values?
+data Via
+  -- | Are they equal in some way?
+  = ViaEq EqualityCheck
+
+  -- | Do they have the same size?
+  | ViaSize
+
+  -- | Do they have the same hash under the given hash function?
+  | ViaHash HashFunc
+    deriving (Generic, Eq, Show)
+
 data Meta (v :: Via) a = Meta
   { mCompare :: Maybe (CompareRep v a)
-  } deriving (Generic)
+  } deriving stock (Generic)
 
-deriving instance Eq   (CompareRep v a) => Eq   (Meta v a)
-deriving instance Show (CompareRep v a) => Show (Meta v a)
+deriving stock instance Eq   (CompareRep v a) => Eq   (Meta v a)
+deriving stock instance Show (CompareRep v a) => Show (Meta v a)
 
 instance Functor     (Meta ('ViaEq p)) where
     fmap f (Meta c) = Meta (fmap f c)
@@ -60,30 +84,6 @@ instance Foldable    (Meta 'ViaSize) where
 instance Traversable (Meta 'ViaSize) where
     traverse _ (Meta c) = pure $ Meta c
 
--- | How should we compare two values?
-data Via
-  -- | Are they equal in some way?
-  = ViaEq EqualityCheck
-
-  -- | Do they have the same size?
-  | ViaSize
-
-  -- | Do they have the same hash under the given hash function?
-  | ViaHash HashFunc
-    deriving (Eq, Show, Generic)
-
--- | What sort of equality check to do.
-data EqualityCheck
-  = Exact -- ^ "Exact equality" is defined as whatever the 'Eq' class does. (lol)
-  | PrefixOf
-    deriving (Eq, Show, Generic)
-
-data HashFunc
-  = HashFuncB3
-  | HashFuncSHA256
-  | HashFuncMD5
-    deriving (Eq, Show, Generic)
-
 type family CompareRep (v :: Via) a where
     CompareRep ('ViaEq _) a   = a
     CompareRep 'ViaSize _     = Natural
@@ -92,7 +92,7 @@ type family CompareRep (v :: Via) a where
 -- | A bytestring representing the output of hashing something using the given
 --   hash function.
 newtype Hash (h :: HashFunc) = Hash { hashBytes :: BS.ByteString }
-    deriving (Generic, Eq, Show)
+    deriving stock (Generic, Eq, Show)
 
 -- may as well do it at type level lol
 type family HashFuncLabel (h :: HashFunc) where
@@ -157,3 +157,12 @@ instance Compare ('ViaHash 'HashFuncB3) BS.ByteString where
 -- is very keen on complicated unsafe IO. cheers no thanks
 hashB3 :: BS.ByteString -> BS.ByteString
 hashB3 bs = BS.pack $ BA.unpack $ B3.hash @B3.DEFAULT_DIGEST_LEN [bs]
+
+class SwapCompare a (vFrom :: Via) (vTo :: Via) where
+    swapCompare :: CompareRep vFrom a -> Either String (CompareRep vTo a)
+
+instance SwapCompare a v v where
+    swapCompare = Right
+
+instance SwapCompare BS.ByteString ('ViaEq 'Exact) ('ViaHash 'HashFuncB3) where
+    swapCompare = Right . Hash . hashB3

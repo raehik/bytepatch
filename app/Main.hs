@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes, OverloadedRecordDot, OverloadedStrings #-}
+{-# LANGUAGE AllowAmbiguousTypes, OverloadedRecordDot #-}
 
 module Main ( main ) where
 
@@ -35,7 +35,6 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Yaml as Yaml
 import           Data.Yaml ( FromJSON )
-import qualified Data.Yaml.Pretty as YamlPretty
 import           Data.Text ( Text )
 import           Optics
 import           Data.Generics.Product.Any
@@ -62,11 +61,11 @@ processDecode :: forall a m. (MonadError Error m, FromJSON a) => Bytes -> m a
 processDecode = liftMapProcessError ErrorYaml . Yaml.decodeEither'
 
 processAlign
-    :: forall v a s m r rs ss i is
+    :: forall (v :: Via) a s m r rs ss is
     .  ( SeekRep s ~ Natural
        , r ~ Const (Align.Meta s)
        , rs ~ RDelete r ss
-       , RElem r ss i
+       , RElem r ss (RIndex r ss)
        , RSubset rs ss is
        , MonadError Error m )
     => (MultiPatch 'RelSeek v a -> [Patch 'RelSeek ss a])
@@ -133,21 +132,6 @@ patchPureBinCompareFwd si ps = do
       Left  e     -> quit $ ErrorProcessApply $ show e
       Right bsOut -> return $ BL.toStrict bsOut
 
-run :: forall m. (MonadIO m, MonadReader Config m) => m ()
-run = readPatchscriptBs >>= liftProcessError . usePatchscriptBs
-  where
-    readPatchscriptBs = asks patchscriptPath >>= readStream . CStreamFile
-
-    usePatchscriptBs bs = do
-        cfg <- ask
-        let cpf = cfg.patchscriptFormat
-        case cfg.patchscriptFormat.dataType of
-          CTextPatch    -> throwError $ ErrorUnimplemented
-          CBinPatch     -> runBinCompareFwd @HexBytestring cpf cfg.cmd bs pure
-          CTextBinPatch -> runBinCompareFwd @Text cpf cfg.cmd bs pure
-          CAsmBinPatch  -> runBinCompareFwd cpf cfg.cmd bs (processAsm @'ArchArmV8ThumbLE)
-          CAsmsBinPatch -> runBinCompareFwd cpf cfg.cmd bs (processAsms @'ArchArmV8ThumbLE)
-
 cmdPatchBinCompareFwd
     :: forall v m
     .  (MonadIO m, Compare v Bytes)
@@ -164,86 +148,6 @@ cmdPatchBinCompareFwd cfg ps = do
                      "refusing to print binary to stdout:"
                   <> " write to a file with --out-file FILE"
                   <> " or use --print-binary flag to override"
-
--- TODO allows MonadIO in the n-rank function oops. just because lazy. pain to
--- fix so W/E LOL
-runBinCompareFwd
-    :: forall a b m
-    .  ( MonadIO m, MonadError Error m
-       , FromJSON a, BinRep b, Show b
-       )
-    => CPatchscriptFormat -> CCmd -> Bytes
-    -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
-    -> m ()
-runBinCompareFwd psfmt cmd' bs preBinRep =
-    case psfmt.align of
-      CNoAlign -> case psfmt.compare of
-        ViaEq Exact -> do
-          ps <-     processDecode bs
-                >>= return . concat . map (BP.convertBin @'AbsSeek)
-                >>= preBinRep
-                >>= processBin @b
-                >>= processLinearize
-          case cmd' of
-            CCmdPatch'   cfgPatch   ->
-              cmdPatchBinCompareFwd @('ViaEq 'Exact) cfgPatch ps
-            CCmdCompile' _cfgCompile -> do
-              let ps' = map (Compile.compilePatch @('ViaHash 'HashFuncB3)) ps
-                  ps'' = fmap (fmap HexBytestring . convertBackBin) ps'
-              liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps''
-        ViaHash HashFuncB3 -> case psfmt.seek of
-          AbsSeek -> do
-              ps <-     processDecode bs
-                    >>= return . concat . map (BP.convertBin @'AbsSeek)
-                    >>= preBinRep
-                    >>= processBin @b
-                    >>= processLinearize
-              case cmd' of
-                CCmdPatch'   cfgPatch   ->
-                  cmdPatchBinCompareFwd @('ViaHash 'HashFuncB3) cfgPatch ps
-                CCmdCompile' _cfgCompile -> do
-                  let ps' = fmap (fmap HexBytestring . convertBackBin) ps
-                  liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
-          FwdSeek -> do
-              ps <-     processDecode bs
-                    >>= return . concat . map BP.convertBin
-                    >>= preBinRep
-                    >>= processBin @b
-              case cmd' of
-                CCmdPatch'   cfgPatch   ->
-                  cmdPatchBinCompareFwd @('ViaHash 'HashFuncB3) cfgPatch ps
-                CCmdCompile' _cfgCompile -> do
-                  let ps' = fmap (fmap HexBytestring . convertBackBin) ps
-                  liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
-          _ -> throwError $ ErrorUnimplemented
-        _ -> throwError $ ErrorUnimplemented
-      CAlign -> case psfmt.compare of
-        ViaEq Exact -> do
-          ps <-     processDecode bs
-                >>= processAlign (BP.convertBinAlign @'AbsSeek)
-                >>= preBinRep
-                >>= processBin @b
-                >>= processLinearize
-          case cmd' of
-            CCmdPatch'   cfgPatch   ->
-              cmdPatchBinCompareFwd @('ViaEq 'Exact) cfgPatch ps
-            CCmdCompile' _cfgCompile -> do
-              let ps' = map (Compile.compilePatch @('ViaHash 'HashFuncB3)) ps
-                  ps'' = fmap (fmap HexBytestring . convertBackBin) ps'
-              liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps''
-        ViaHash HashFuncB3 -> do
-          ps <-     processDecode bs
-                >>= processAlign (BP.convertBinAlign @'AbsSeek)
-                >>= preBinRep
-                >>= processBin @b
-                >>= processLinearize
-          case cmd' of
-            CCmdPatch'   cfgPatch   ->
-              cmdPatchBinCompareFwd @('ViaHash 'HashFuncB3) cfgPatch ps
-            CCmdCompile' _cfgCompile -> do
-              let ps' = fmap (fmap HexBytestring . convertBackBin) ps
-              liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
-        _ -> throwError $ ErrorUnimplemented
 
 logWarn :: MonadIO m => String -> m ()
 logWarn msg = liftIO $ putStrLn $ "bytepatch: warning: " <> msg
@@ -280,12 +184,80 @@ readStream s = liftIO $
       CStreamStd     -> BS.getContents
       CStreamFile fp -> BS.readFile fp
 
--- silly stuff
-yamlPrettyCfg :: YamlPretty.Config
-yamlPrettyCfg = YamlPretty.setConfCompare cmp $ YamlPretty.setConfDropNull True $ YamlPretty.defConfig
+run :: forall m. (MonadIO m, MonadReader Config m) => m ()
+run = readPatchscriptBs >>= liftProcessError . usePatchscriptBs
   where
-    cmp "data" _  = LT
-    cmp _  "data" = GT
-    cmp "seek" _ = LT
-    cmp _ "seek" = GT
-    cmp k1     k2 = Prelude.compare k1 k2
+    readPatchscriptBs = asks patchscriptPath >>= readStream . CStreamFile
+    usePatchscriptBs bs = do
+        cfg <- ask
+        let cpf = cfg.patchscriptFormat
+        case cpf.compare of
+          ViaEq   Exact      -> do
+            ps <- prep @('ViaEq 'Exact)        cfg.patchscriptFormat bs
+            case cfg.cmd of
+              CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
+              CCmdCompile' cfg' ->
+                let ps' = map (Compile.compilePatch @('ViaHash 'HashFuncB3)) ps
+                 in Compile.runCompileCompareBin cfg' ps'
+          ViaHash HashFuncB3 -> do
+            ps <- prep @('ViaHash 'HashFuncB3) cfg.patchscriptFormat bs
+            case cfg.cmd of
+              CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
+              CCmdCompile' cfg' -> Compile.runCompileCompareBin cfg' ps
+          _ -> throwError $ ErrorUnimplemented
+
+-- grr
+prep
+    :: forall v m
+     . ( MonadError Error m
+       , FromJSON (Compare.CompareRep v Text)
+       , FromJSON (Compare.CompareRep v HexBytestring)
+       , FromJSON (Compare.CompareRep v (Asm.AsmInstr 'ArchArmV8ThumbLE))
+       , FromJSON (Compare.CompareRep v [Asm.AsmInstr 'ArchArmV8ThumbLE])
+       , Show     (Compare.CompareRep v Bytes)
+       , Traversable (Compare.Meta v)
+       )
+    => CPatchscriptFormat
+    -> Bytes
+    -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
+prep cfg bs = case cfg.dataType of
+  CTextPatch    -> throwError $ ErrorUnimplemented
+  CBinPatch     -> prep' @HexBytestring cfg pure bs
+  CTextBinPatch -> prep' @Text          cfg pure bs
+  CAsmBinPatch  -> prep' cfg (processAsm @'ArchArmV8ThumbLE) bs
+  CAsmsBinPatch -> prep' cfg (processAsms @'ArchArmV8ThumbLE) bs
+
+prep'
+    :: forall a b v m
+    .  ( FromJSON a, BinRep b, Show b
+       , FromJSON (Compare.CompareRep v a)
+       , Traversable (Compare.Meta v)
+       , Show     (Compare.CompareRep v Bytes)
+       , MonadError Error m
+       )
+    => CPatchscriptFormat
+    -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
+    -> Bytes
+    -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
+prep' cfg fBin bs = case cfg.seek of
+  AbsSeek -> case cfg.align of
+    CAlign ->     processDecode bs
+              >>= processAlign @v (BP.convertBinAlign @'AbsSeek)
+              >>= fBin
+              >>= processBin @b
+              >>= processLinearize
+    CNoAlign ->     processDecode bs
+                >>= return . concat . map (BP.convertBin @'AbsSeek)
+                >>= fBin
+                >>= processBin @b
+                >>= processLinearize
+  FwdSeek -> case cfg.align of
+    CAlign ->     processDecode bs
+              >>= processAlign @v (BP.convertBinAlign @'FwdSeek)
+              >>= fBin
+              >>= processBin @b
+    CNoAlign ->     processDecode bs
+                >>= return . concat . map (BP.convertBin @'FwdSeek)
+                >>= fBin
+                >>= processBin @b
+  RelSeek -> throwError $ ErrorUnimplemented

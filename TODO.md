@@ -1,11 +1,10 @@
 Fixes:
 
   * Compile -> Normalize
+  * Split asm & disasm (asm doesn't guarantee disasm)
 
 Features:
 
-  * Actually use processed patches (currently can't select whether to linearize,
-    or just read fwdseeks from the get-go)
   * Concat patches
     * only really for performance. cba because I can just pipe things
 
