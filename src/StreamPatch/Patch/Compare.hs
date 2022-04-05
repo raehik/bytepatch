@@ -4,6 +4,7 @@
 -}
 
 {-# LANGUAGE AllowAmbiguousTypes, OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module StreamPatch.Patch.Compare where
 
@@ -32,29 +33,43 @@ import Text.Megaparsec.Char.Lexer qualified as MCL
 import BLAKE3 qualified as B3
 import Data.ByteArray qualified as BA
 
--- | What sort of equality check to do.
-data EqualityCheck
-  = Exact -- ^ "Exact equality" is defined as whatever the 'Eq' class does. (lol)
-  | PrefixOf
-    deriving stock (Generic, Eq, Show)
+import Data.Singletons.TH
+-- required for deriving instances (seems like bug)
+import Prelude.Singletons hiding ( AbsSym0, Compare )
+import Data.Singletons.Base.TH ( FromString, sFromString )
 
-data HashFunc
-  = HashFuncB3
-  | HashFuncSHA256
-  | HashFuncMD5
-    deriving stock (Generic, Eq, Show)
+$(singletons [d|
+    -- | What sort of equality check to do.
+    data EqualityCheck
+      = Exact -- ^ "Exact equality" is defined as whatever the 'Eq' class does. (lol)
+      | PrefixOf
+        deriving stock (Eq, Show)
+    |])
+deriving stock instance Generic EqualityCheck
 
--- | How should we compare two values?
-data Via
-  -- | Are they equal in some way?
-  = ViaEq EqualityCheck
+$(singletons [d|
+    data HashFunc
+      = HashFuncB3
+      | HashFuncSHA256
+      | HashFuncMD5
+        deriving stock (Eq, Show)
+    |])
+deriving stock instance Generic HashFunc
 
-  -- | Do they have the same size?
-  | ViaSize
+$(singletons [d|
+    -- | How should we compare two values?
+    data Via
+      -- | Are they equal in some way?
+      = ViaEq EqualityCheck
 
-  -- | Do they have the same hash under the given hash function?
-  | ViaHash HashFunc
-    deriving (Generic, Eq, Show)
+      -- | Do they have the same size?
+      | ViaSize
+
+      -- | Do they have the same hash under the given hash function?
+      | ViaHash HashFunc
+        deriving (Eq, Show)
+    |])
+deriving stock instance Generic Via
 
 data Meta (v :: Via) a = Meta
   { mCompare :: Maybe (CompareRep v a)
@@ -63,26 +78,23 @@ data Meta (v :: Via) a = Meta
 deriving stock instance Eq   (CompareRep v a) => Eq   (Meta v a)
 deriving stock instance Show (CompareRep v a) => Show (Meta v a)
 
-instance Functor     (Meta ('ViaEq p)) where
-    fmap f (Meta c) = Meta (fmap f c)
-instance Foldable    (Meta ('ViaEq p)) where
-    foldMap f (Meta c) = foldMap f c
-instance Traversable (Meta ('ViaEq p)) where
-    traverse f (Meta c) = Meta <$> traverse f c
+instance SingI v => Functor     (Meta v) where
+    fmap f (Meta c) = case sing @v of
+      SViaEq   _ -> Meta $ fmap f c
+      SViaSize   -> Meta c
+      SViaHash _ -> Meta c
 
-instance Functor     (Meta ('ViaHash h)) where
-    fmap _ (Meta c) = Meta c
-instance Foldable    (Meta ('ViaHash p)) where
-    foldMap _ = const mempty
-instance Traversable (Meta ('ViaHash p)) where
-    traverse _ (Meta c) = pure $ Meta c
+instance SingI v => Foldable    (Meta v) where
+    foldMap f (Meta c) = case sing @v of
+      SViaEq   _ -> foldMap f c
+      SViaSize   -> mempty
+      SViaHash _ -> mempty
 
-instance Functor     (Meta 'ViaSize) where
-    fmap _ (Meta c) = Meta c
-instance Foldable    (Meta 'ViaSize) where
-    foldMap _ = const mempty
-instance Traversable (Meta 'ViaSize) where
-    traverse _ (Meta c) = pure $ Meta c
+instance SingI v => Traversable (Meta v) where
+    traverse f (Meta c) = case sing @v of
+      SViaEq   _ -> Meta <$> traverse f c
+      SViaSize   -> pure $ Meta c
+      SViaHash _ -> pure $ Meta c
 
 type family CompareRep (v :: Via) a where
     CompareRep ('ViaEq _) a   = a

@@ -74,6 +74,9 @@ dependencies:
 
 # TODO
 - memory
+- singletons
+- singletons-th
+- singletons-base
 
 library:
   source-dirs: src

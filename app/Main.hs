@@ -14,7 +14,7 @@ import qualified StreamPatch.Patch.Linearize as Linear
 import qualified StreamPatch.Patch.Binary as Bin
 import           StreamPatch.Patch.Binary ( BinRep )
 import qualified StreamPatch.Patch.Compare as Compare
-import           StreamPatch.Patch.Compare ( Via(..), EqualityCheck(..), HashFunc(..), Compare )
+import           StreamPatch.Patch.Compare ( Via(..), SVia(..), EqualityCheck(..), SEqualityCheck(..), HashFunc(..), SHashFunc(..), Compare )
 import qualified StreamPatch.Apply as Apply
 import           BytePatch as BP
 import           Raehik.HexBytestring
@@ -38,6 +38,8 @@ import           Data.Yaml ( FromJSON )
 import           Data.Text ( Text )
 import           Optics
 import           Data.Generics.Product.Any
+
+import Data.Singletons ( withSomeSing, Sing, SingI )
 
 type Bytes = BS.ByteString
 
@@ -191,31 +193,40 @@ run = readPatchscriptBs >>= liftProcessError . usePatchscriptBs
     usePatchscriptBs bs = do
         cfg <- ask
         let cpf = cfg.patchscriptFormat
-        case cpf.compare of
-          ViaEq   Exact      -> do
-            ps <- prep @('ViaEq 'Exact)        cfg.patchscriptFormat bs
+        withSomeSing cpf.compare (f cfg bs)
+
+    -- using singletons simply to automatically bring type into scope
+    f :: forall (v :: Via). Config -> Bytes -> Sing v -> ExceptT Error m ()
+    f cfg bs = \case
+          SViaEq   SExact      -> do
+            ps <- prep @v cfg.patchscriptFormat bs
             case cfg.cmd of
               CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
               CCmdCompile' cfg' ->
                 let ps' = map (Compile.compilePatch @('ViaHash 'HashFuncB3)) ps
                  in Compile.runCompileCompareBin cfg' ps'
-          ViaHash HashFuncB3 -> do
-            ps <- prep @('ViaHash 'HashFuncB3) cfg.patchscriptFormat bs
+          SViaHash SHashFuncB3 -> do
+            ps <- prep @v cfg.patchscriptFormat bs
             case cfg.cmd of
               CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
               CCmdCompile' cfg' -> Compile.runCompileCompareBin cfg' ps
           _ -> throwError $ ErrorUnimplemented
 
--- grr
+-- Parse and prepare/normalize a binrep-compare patchscript, polymorphic on the
+-- comparison strategy. We can't handle that in here, because you need it when
+-- processing the command, since different comparison strategies require
+-- different handling, and some are invalid.
 prep
     :: forall v m
+    -- grr
      . ( MonadError Error m
        , FromJSON (Compare.CompareRep v Text)
        , FromJSON (Compare.CompareRep v HexBytestring)
        , FromJSON (Compare.CompareRep v (Asm.AsmInstr 'ArchArmV8ThumbLE))
        , FromJSON (Compare.CompareRep v [Asm.AsmInstr 'ArchArmV8ThumbLE])
        , Show     (Compare.CompareRep v Bytes)
-       , Traversable (Compare.Meta v)
+       -- , Traversable (Compare.Meta v)
+       , SingI v
        )
     => CPatchscriptFormat
     -> Bytes
@@ -227,11 +238,14 @@ prep cfg bs = case cfg.dataType of
   CAsmBinPatch  -> prep' cfg (processAsm @'ArchArmV8ThumbLE) bs
   CAsmsBinPatch -> prep' cfg (processAsms @'ArchArmV8ThumbLE) bs
 
+-- Binrep-compare, parsing @a@ and failably converting to @b@, In many cases,
+-- you may want to parse and binrep the same type -- in such cases, use 'pure'.
 prep'
     :: forall a b v m
     .  ( FromJSON a, BinRep b, Show b
        , FromJSON (Compare.CompareRep v a)
-       , Traversable (Compare.Meta v)
+       -- , Traversable (Compare.Meta v)
+       , SingI v
        , Show     (Compare.CompareRep v Bytes)
        , MonadError Error m
        )
