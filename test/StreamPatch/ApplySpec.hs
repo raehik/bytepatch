@@ -13,7 +13,7 @@ import           GHC.Natural
 
 spec :: Spec
 spec = do
-    let patch' ps = runPureSimpleFwdList $ makePatchscript ps
+    let patch' ps = runPureFwdList $ makePatchscript ps
     it "applies valid simple forward in-place patches" $ do
       patch' []           "1234567890" `shouldBe` "1234567890"
       patch' [(0, "XXX")] "1234567890" `shouldBe` "XXX4567890"
