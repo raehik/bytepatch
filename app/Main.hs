@@ -14,7 +14,7 @@ import qualified StreamPatch.Patch.Linearize as Linear
 import qualified StreamPatch.Patch.Binary as Bin
 import           StreamPatch.Patch.Binary ( BinRep )
 import qualified StreamPatch.Patch.Compare as Compare
-import           StreamPatch.Patch.Compare ( Via(..), SVia(..), EqualityCheck(..), SEqualityCheck(..), HashFunc(..), SHashFunc(..), Compare )
+import           StreamPatch.Patch.Compare ( Via(..), SVia(..), SEqualityCheck(..), HashFunc(..), SHashFunc(..), Compare )
 import qualified StreamPatch.Apply as Apply
 import           BytePatch as BP
 import           Raehik.HexBytestring
@@ -244,7 +244,6 @@ prep'
     :: forall a b v m
     .  ( FromJSON a, BinRep b, Show b
        , FromJSON (Compare.CompareRep v a)
-       -- , Traversable (Compare.Meta v)
        , SingI v
        , Show     (Compare.CompareRep v Bytes)
        , MonadError Error m
@@ -253,25 +252,28 @@ prep'
     -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
     -> Bytes
     -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
-prep' cfg fBin bs = case cfg.seek of
-  AbsSeek -> case cfg.align of
-    CAlign ->     processDecode bs
-              >>= processAlign @v (BP.convertBinAlign @'AbsSeek)
-              >>= fBin
-              >>= processBin @b
-              >>= processLinearize
-    CNoAlign ->     processDecode bs
-                >>= return . concat . map (BP.convertBin @'AbsSeek)
-                >>= fBin
-                >>= processBin @b
-                >>= processLinearize
-  FwdSeek -> case cfg.align of
-    CAlign ->     processDecode bs
-              >>= processAlign @v (BP.convertBinAlign @'FwdSeek)
-              >>= fBin
-              >>= processBin @b
-    CNoAlign ->     processDecode bs
-                >>= return . concat . map (BP.convertBin @'FwdSeek)
-                >>= fBin
-                >>= processBin @b
-  RelSeek -> throwError $ ErrorUnimplemented
+prep' cfg fBin bs = withSomeSing cfg.seek go
+  where
+    go :: forall (s :: SeekKind). Sing s -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
+    go = \case
+      SAbsSeek -> case cfg.align of
+        CAlign ->     processDecode bs
+                  >>= processAlign @v (BP.convertBinAlign @s)
+                  >>= fBin
+                  >>= processBin @b
+                  >>= processLinearize
+        CNoAlign ->     processDecode bs
+                    >>= return . concat . map (BP.convertBin @s)
+                    >>= fBin
+                    >>= processBin @b
+                    >>= processLinearize
+      SFwdSeek -> case cfg.align of
+        CAlign ->     processDecode bs
+                  >>= processAlign @v (BP.convertBinAlign @s)
+                  >>= fBin
+                  >>= processBin @b
+        CNoAlign ->     processDecode bs
+                    >>= return . concat . map (BP.convertBin @s)
+                    >>= fBin
+                    >>= processBin @b
+      SRelSeek -> throwError $ ErrorUnimplemented
