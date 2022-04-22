@@ -147,6 +147,16 @@ cm fa = Flap fa :& RNil
 
 --------------------------------------------------------------------------------
 
+-- | Convenience function to wrap a single meta into an 'HFunctorList'.
+metaWrap1 :: f a -> HFunctorList '[f] a
+metaWrap1 = HFunctorList . cm
+
+-- | Convenience function for the empty 'HFunctorList'.
+metaEmpty :: HFunctorList '[] a
+metaEmpty = HFunctorList RNil
+
+--------------------------------------------------------------------------------
+
 convertBackBin :: forall v s a. Patch s '[Compare.Meta v, Bin.Meta] a -> MultiPatch s v a
 convertBackBin p = MultiPatch { mpData = patchData p
                               , mpAt   = [s] }
