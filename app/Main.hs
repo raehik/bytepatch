@@ -18,8 +18,9 @@ import           StreamPatch.Patch.Compare ( Via(..), SVia(..), SEqualityCheck(.
 import qualified StreamPatch.Apply as Apply
 import           BytePatch as BP
 import           Raehik.HexBytestring
-import           StreamPatch.Patch.Binary.Asm ( Arch(..) )
-import qualified StreamPatch.Patch.Binary.Asm as Asm
+import Binrep.Type.Assembly qualified as Asm
+import Binrep.Type.Assembly.Assemble qualified as Asm
+import Binrep.Type.Assembly.Assemble ( Assemble )
 import           StreamPatch.HFunctorList ( Flap, HFunctorList )
 
 import qualified System.Exit as System
@@ -52,7 +53,7 @@ data Error
   | Error         String
   | ErrorUnimplemented
   | ErrorProcessBinRep String -- can't do Bin.Error, has a typevar (until we put the typevar in this data, which will happen eventually)
-  | ErrorProcessAsm Asm.Error
+  | ErrorProcessAssemble String
   | ErrorProcessApply String
     deriving (Generic, Show)
 
@@ -88,18 +89,22 @@ liftMapProcessError :: MonadError Error m => (e -> Error) -> Either e a -> m a
 liftMapProcessError f = liftEither . mapLeft f
 
 processAsm
-    :: forall (arch :: Arch) s fs m
-    .  (MonadError Error m, Asm.Target arch, Traversable (HFunctorList fs))
+    :: forall (arch :: Asm.Arch) s fs m
+    .  (MonadError Error m, Assemble arch, Traversable (HFunctorList fs))
     => [Patch s fs (Asm.AsmInstr arch)]
-    -> m [Patch s fs (Asm.MachineInstr arch)]
-processAsm = liftMapProcessError ErrorProcessAsm . traverse (traverse (Asm.assembleInstr @arch))
+    -> m [Patch s fs (Asm.MachineCode arch)]
+processAsm =
+      liftMapProcessError ErrorProcessAssemble
+    . traverse (traverse (Asm.assemble1 @arch))
 
 processAsms
-    :: forall (arch :: Arch) s fs m
-    .  (MonadError Error m, Asm.Target arch, Traversable (HFunctorList fs))
+    :: forall (arch :: Asm.Arch) s fs m
+    .  (MonadError Error m, Assemble arch, Traversable (HFunctorList fs))
     => [Patch s fs [Asm.AsmInstr arch]]
-    -> m [Patch s fs [Asm.MachineInstr arch]]
-processAsms = liftMapProcessError ErrorProcessAsm . traverse (traverse (traverse (Asm.assembleInstr @arch)))
+    -> m [Patch s fs (Asm.MachineCode arch)]
+processAsms =
+      liftMapProcessError ErrorProcessAssemble
+    . traverse (traverse (Asm.assemble @arch))
 
 processBin
     :: forall a s ss is r rs m
@@ -176,7 +181,7 @@ quit err = do
       ErrorProcessBinRep e -> (3, "while converting to binary representation: "<>e)
       ErrorLinear   e -> (4, "while linearizing: "<>e)
       ErrorProcessApply e -> (5, "while applying patch: "<>e)
-      ErrorProcessAsm e -> (6, "while assembling: "<>show e)
+      ErrorProcessAssemble e -> (6, "while assembling: "<>e)
       ErrorUnimplemented -> (10, "feature not yet implemented")
       Error         e -> (20, e)
 
@@ -222,8 +227,8 @@ prep
      . ( MonadError Error m
        , FromJSON (Compare.CompareRep v Text)
        , FromJSON (Compare.CompareRep v HexBytestring)
-       , FromJSON (Compare.CompareRep v (Asm.AsmInstr 'ArchArmV8ThumbLE))
-       , FromJSON (Compare.CompareRep v [Asm.AsmInstr 'ArchArmV8ThumbLE])
+       , FromJSON (Compare.CompareRep v (Asm.AsmInstr 'Asm.ArchArmV8ThumbLE))
+       , FromJSON (Compare.CompareRep v [Asm.AsmInstr 'Asm.ArchArmV8ThumbLE])
        , Show     (Compare.CompareRep v Bytes)
        -- , Traversable (Compare.Meta v)
        , SingI v
@@ -235,8 +240,8 @@ prep cfg bs = case cfg.dataType of
   CTextPatch    -> throwError $ ErrorUnimplemented
   CBinPatch     -> prep' @HexBytestring cfg pure bs
   CTextBinPatch -> prep' @Text          cfg pure bs
-  CAsmBinPatch  -> prep' cfg (processAsm @'ArchArmV8ThumbLE) bs
-  CAsmsBinPatch -> prep' cfg (processAsms @'ArchArmV8ThumbLE) bs
+  CAsmBinPatch  -> prep' cfg (processAsm @'Asm.ArchArmV8ThumbLE) bs
+  CAsmsBinPatch -> prep' cfg (processAsms @'Asm.ArchArmV8ThumbLE) bs
 
 -- Binrep-compare, parsing @a@ and failably converting to @b@, In many cases,
 -- you may want to parse and binrep the same type -- in such cases, use 'pure'.

@@ -103,6 +103,8 @@ type family CompareRep (v :: Via) a where
 
 -- | A bytestring representing the output of hashing something using the given
 --   hash function.
+--
+-- TODO use ShortByteString instead
 newtype Hash (h :: HashFunc) = Hash { hashBytes :: BS.ByteString }
     deriving stock (Generic, Eq, Show)
 
