@@ -24,6 +24,39 @@ packages:
       sha256: 0264ef3e7919e7b0d668c4153f6ce0d88e6965626b52d9dfd2cafd70309501d3
   original:
     hackage: blake3-0.2@sha256:d1146b9a51ccfbb0532780778b6d016a614e3d44c05d8c1923dde9a8be869045,2448
+- completed:
+    name: binrep
+    version: 0.2.0
+    git: https://github.com/raehik/binrep
+    pantry-tree:
+      size: 1733
+      sha256: a618039ada37054af6b096b77e6652cff8ab686c8a1270d4e8fbb0a7d89e96f8
+    commit: 01f53e868d1c6895243796d06687197d216f1bfb
+  original:
+    git: https://github.com/raehik/binrep
+    commit: 01f53e868d1c6895243796d06687197d216f1bfb
+- completed:
+    name: refined
+    version: 0.6.3
+    git: https://github.com/raehik/refined
+    pantry-tree:
+      size: 779
+      sha256: 30b0606568fdd1c19dd7b530322a7bd6c7f3911c285c4dd6247e29f2e8b2e116
+    commit: 952e0348348aaf11c8b93c6e1ac6d33a0cbbb6b1
+  original:
+    git: https://github.com/raehik/refined
+    commit: 952e0348348aaf11c8b93c6e1ac6d33a0cbbb6b1
+- completed:
+    name: cereal
+    version: 0.5.8.2
+    git: https://github.com/raehik/cereal
+    pantry-tree:
+      size: 1815
+      sha256: 98f8da3898d7117cfc71de714d9cc07382739b921a0cba81f9c02c7b3d88eeaf
+    commit: 1c2e1fc36bb1cd18eb4843a0998b938464005b01
+  original:
+    git: https://github.com/raehik/cereal
+    commit: 1c2e1fc36bb1cd18eb4843a0998b938464005b01
 snapshots:
 - completed:
     size: 539378

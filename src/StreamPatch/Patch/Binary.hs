@@ -3,23 +3,16 @@
 -- TODO rewrite patch/check bits (some overlap)
 -- TODO rewrite, rename checks (one for process, one for apply)
 
-module StreamPatch.Patch.Binary
-  ( Meta(..)
-  , MetaPrep(..)
-  , Error(..)
-  , BinRep(..)
-  , binRepify
-  ) where
+module StreamPatch.Patch.Binary where
 
 import StreamPatch.Patch
 import StreamPatch.HFunctorList
 
+import Binrep
+
 import GHC.Generics       ( Generic )
 import GHC.Natural
 import Data.ByteString qualified as BS
-import Data.Text.Encoding qualified as Text
-import Data.Text qualified as Text
-import Data.Text ( Text )
 import Data.Vinyl
 import Data.Functor.Const
 import Data.Vinyl.TypeLevel
@@ -42,12 +35,18 @@ data MetaPrep = MetaPrep
   } deriving (Eq, Show, Generic)
 
 data Error a
-  = ErrorBinRepOverlong Natural Natural a BS.ByteString
+  = ErrorBinRepOverlong Natural Natural a (Maybe BS.ByteString)
+  -- ^ If the value was serialized, it's given in the 'Maybe'.
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
+-- Note that via binrep's 'BLen' typeclass, we can check sizing "for free",
+-- without serializing. TODO, I could make another function that serializes,
+-- then checks. That way, we can return the serialization attempt to the user,
+-- and not require 'BLen'. In exchange, it's less efficient on errors. Both have
+-- the same main path complexity.
 binRepify
     :: forall a s ss is r rs
-    .  ( BinRep a
+    .  ( Put a, BLen a
        , Traversable (HFunctorList rs)
        , r ~ Const MetaPrep
        , rs ~ RDelete r ss
@@ -56,58 +55,16 @@ binRepify
     => Patch s ss a
     -> Either (Error a) (Patch s rs BS.ByteString)
 binRepify (Patch a s ms) = do
-    let bs = toBinRep a
-        (metaCheck, ms') = hflStrip (checkMeta bs . getConst) ms
-    metaCheck
-    let ms'' = fmap toBinRep ms'
-    return $ Patch bs s ms''
+    let (m, ms') = hflStrip getConst ms
+    checkMeta m
+    let bs = runPut a
+        bsms = fmap runPut ms'
+    return $ Patch bs s bsms
   where
-    checkMeta bs m =
+    checkMeta m =
         case mpMaxBytes m of
           Nothing       -> return ()
           Just maxBytes ->
-            if   BS.length bs > fromIntegral maxBytes
-            then Left $ ErrorBinRepOverlong (fromIntegral (BS.length bs)) maxBytes a bs
+            if   blen a > maxBytes
+            then Left $ ErrorBinRepOverlong (blen a) maxBytes a Nothing
             else return ()
-
--- | Type has a binary representation for using in patchscripts.
---
--- Patchscripts are parsed parameterized over the type to edit. That type needs
--- to become a bytestring for eventual patch application. We're forced into
--- newtypes and typeclasses by Aeson already, so this just enables us to define
--- some important patch generation behaviour in one place. Similarly to Aeson,
--- if you require custom behaviour for existing types (e.g. length-prefixed
--- strings instead of C-style null terminated), define a newtype over it.
-class BinRep a where
-    toBinRep   :: a -> BS.ByteString
-    fromBinRep :: BS.ByteString -> Maybe a
-    fromBinRep = const Nothing
-    -- ^ Attempt to recover the "original" value from a bytestring.
-    --
-    -- Intended to be used for debugging. Our check functions compare converted
-    -- bytestrings, not @a@s. This should only be used if a bytestring
-    -- comparison fails, to recover a more human-readable error. (This is why we
-    -- only ask for a @Maybe@ -- we don't really care if the de-conversion
-    -- fails, so we just say "sorry" if it does.
-    --
-    -- To explain another way, to is printing (1), from is parsing (0-many).
-
--- | Bytestrings are copied as-is.
-instance BinRep BS.ByteString where
-    toBinRep = id
-
--- | Text is converted to UTF-8 bytes and null-terminated.
---
--- TODO this needs to go. See gtvm-hs, @Str (rep :: StrRep)@.
-instance BinRep Text where
-    toBinRep = flip BS.snoc 0x00 . Text.encodeUtf8
-
--- | String is the same but goes the long way round, through Text.
---
--- TODO blegh. throw it out.
-instance BinRep String where
-    toBinRep = toBinRep . Text.pack
-
--- Now, we *could* write @instance BinRep a => BinRep [a]@ using @concat@. But
--- I'm not certain it's always wanted. It works and is useful for
--- @Asm.MachineInstr arch@. Can't think how what it would mean for other types.

@@ -12,16 +12,19 @@ import           StreamPatch.Patch
 import qualified StreamPatch.Patch.Align  as Align
 import qualified StreamPatch.Patch.Linearize as Linear
 import qualified StreamPatch.Patch.Binary as Bin
-import           StreamPatch.Patch.Binary ( BinRep )
 import qualified StreamPatch.Patch.Compare as Compare
 import           StreamPatch.Patch.Compare ( Via(..), SVia(..), SEqualityCheck(..), HashFunc(..), SHashFunc(..), Compare )
 import qualified StreamPatch.Apply as Apply
 import           BytePatch as BP
-import           Raehik.HexBytestring
+import           Raehik.HexByteString
+import           StreamPatch.HFunctorList ( Flap, HFunctorList )
+
 import Binrep.Type.Assembly qualified as Asm
 import Binrep.Type.Assembly.Assemble qualified as Asm
 import Binrep.Type.Assembly.Assemble ( Assemble )
-import           StreamPatch.HFunctorList ( Flap, HFunctorList )
+
+import Binrep
+import Binrep.Type.ByteString
 
 import qualified System.Exit as System
 import           Numeric.Natural
@@ -44,6 +47,8 @@ import Data.Singletons ( withSomeSing, Sing, SingI )
 
 type Bytes = BS.ByteString
 
+--------------------------------------------------------------------------------
+
 -- Errors that can occur during patchscript processing. Everything except
 -- reading the patchscript, and writing out the successfully patched file.
 data Error
@@ -57,8 +62,34 @@ data Error
   | ErrorProcessApply String
     deriving (Generic, Show)
 
-main :: IO ()
-main = CLI.parse >>= runReaderT run
+quit :: MonadIO m => Error -> m a
+quit err = do
+    liftIO $ putStrLn $ "bytepatch: error: " <> errStr
+    liftIO $ System.exitWith $ System.ExitFailure errExitCode
+  where
+    (errExitCode, errStr) = case err of
+      ErrorYaml     e -> (1, "while parsing YAML: "<>show e)
+      ErrorAlign    e -> (2, "while aligning: "<>e)
+      ErrorProcessBinRep e -> (3, "while converting to binary representation: "<>e)
+      ErrorLinear   e -> (4, "while linearizing: "<>e)
+      ErrorProcessApply e -> (5, "while applying patch: "<>e)
+      ErrorProcessAssemble e -> (6, "while assembling: "<>e)
+      ErrorUnimplemented -> (10, "feature not yet implemented")
+      Error         e -> (20, e)
+
+logWarn :: MonadIO m => String -> m ()
+logWarn msg = liftIO $ putStrLn $ "bytepatch: warning: " <> msg
+
+liftProcessError :: MonadIO m => ExceptT Error m a -> m a
+liftProcessError action =
+    runExceptT action >>= \case
+      Left  e -> quit e
+      Right a -> return a
+
+liftMapProcessError :: MonadError Error m => (e -> Error) -> Either e a -> m a
+liftMapProcessError f = liftEither . mapLeft f
+
+--------------------------------------------------------------------------------
 
 processDecode :: forall a m. (MonadError Error m, FromJSON a) => Bytes -> m a
 processDecode = liftMapProcessError ErrorYaml . Yaml.decodeEither'
@@ -85,9 +116,6 @@ processLinearize
     -> m [Patch 'FwdSeek fs a]
 processLinearize = liftMapProcessError (ErrorLinear . show) . Linear.linearize
 
-liftMapProcessError :: MonadError Error m => (e -> Error) -> Either e a -> m a
-liftMapProcessError f = liftEither . mapLeft f
-
 processAsm
     :: forall (arch :: Asm.Arch) s fs m
     .  (MonadError Error m, Assemble arch, Traversable (HFunctorList fs))
@@ -109,7 +137,7 @@ processAsms =
 processBin
     :: forall a s ss is r rs m
     .  ( MonadError Error m
-       , BinRep a
+       , Put a, BLen a
        , r ~ Const Bin.MetaPrep
        , rs ~ RDelete r ss
        , RElem r ss (RIndex r ss)
@@ -121,11 +149,39 @@ processBin
     -> m [Patch s rs Bytes]
 processBin = liftMapProcessError (ErrorProcessBinRep . show) . traverse Bin.binRepify
 
-liftProcessError :: MonadIO m => ExceptT Error m a -> m a
-liftProcessError action =
-    runExceptT action >>= \case
-      Left  e -> quit e
-      Right a -> return a
+--------------------------------------------------------------------------------
+
+main :: IO ()
+main = CLI.parse >>= runReaderT run
+
+run :: forall m. (MonadIO m, MonadReader Config m) => m ()
+run = readPatchscriptBs >>= liftProcessError . usePatchscriptBs
+  where
+    readPatchscriptBs = asks patchscriptPath >>= readStream . CStreamFile
+    usePatchscriptBs bs = do
+        cfg <- ask
+        let cpf = cfg.patchscriptFormat
+        withSomeSing cpf.compare (process cfg bs)
+
+-- using singletons simply to automatically bring type into scope
+process
+    :: forall (v :: Via) m
+    .  ( MonadIO m, MonadReader Config m )
+    => Config -> Bytes -> Sing v -> ExceptT Error m ()
+process cfg bs = \case
+      SViaEq   SExact      -> do
+        ps <- prep @v cfg.patchscriptFormat bs
+        case cfg.cmd of
+          CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
+          CCmdCompile' cfg' ->
+            let ps' = map (Compile.compilePatch @('ViaDigest 'B3)) ps
+             in Compile.runCompileCompareBin cfg' ps'
+      SViaDigest SB3 -> do
+        ps <- prep @v cfg.patchscriptFormat bs
+        case cfg.cmd of
+          CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
+          CCmdCompile' cfg' -> Compile.runCompileCompareBin cfg' ps
+      _ -> throwError $ ErrorUnimplemented
 
 patchPureBinCompareFwd
     :: forall v m
@@ -156,9 +212,6 @@ cmdPatchBinCompareFwd cfg ps = do
                   <> " write to a file with --out-file FILE"
                   <> " or use --print-binary flag to override"
 
-logWarn :: MonadIO m => String -> m ()
-logWarn msg = liftIO $ putStrLn $ "bytepatch: warning: " <> msg
-
 wrapAlign
     :: ( SeekRep s ~ Natural
        , r ~ Const (Align.Meta s)
@@ -170,52 +223,11 @@ wrapAlign
     -> Either (Align.Error s) [Patch s rs a]
 wrapAlign f = BP.align . over (the @"alignedPatches") (concat . map f)
 
-quit :: MonadIO m => Error -> m a
-quit err = do
-    liftIO $ putStrLn $ "bytepatch: error: " <> errStr
-    liftIO $ System.exitWith $ System.ExitFailure errExitCode
-  where
-    (errExitCode, errStr) = case err of
-      ErrorYaml     e -> (1, "while parsing YAML: "<>show e)
-      ErrorAlign    e -> (2, "while aligning: "<>e)
-      ErrorProcessBinRep e -> (3, "while converting to binary representation: "<>e)
-      ErrorLinear   e -> (4, "while linearizing: "<>e)
-      ErrorProcessApply e -> (5, "while applying patch: "<>e)
-      ErrorProcessAssemble e -> (6, "while assembling: "<>e)
-      ErrorUnimplemented -> (10, "feature not yet implemented")
-      Error         e -> (20, e)
-
 readStream :: MonadIO m => CStream -> m Bytes
 readStream s = liftIO $
     case s of
       CStreamStd     -> BS.getContents
       CStreamFile fp -> BS.readFile fp
-
-run :: forall m. (MonadIO m, MonadReader Config m) => m ()
-run = readPatchscriptBs >>= liftProcessError . usePatchscriptBs
-  where
-    readPatchscriptBs = asks patchscriptPath >>= readStream . CStreamFile
-    usePatchscriptBs bs = do
-        cfg <- ask
-        let cpf = cfg.patchscriptFormat
-        withSomeSing cpf.compare (f cfg bs)
-
-    -- using singletons simply to automatically bring type into scope
-    f :: forall (v :: Via). Config -> Bytes -> Sing v -> ExceptT Error m ()
-    f cfg bs = \case
-          SViaEq   SExact      -> do
-            ps <- prep @v cfg.patchscriptFormat bs
-            case cfg.cmd of
-              CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
-              CCmdCompile' cfg' ->
-                let ps' = map (Compile.compilePatch @('ViaHash 'HashFuncB3)) ps
-                 in Compile.runCompileCompareBin cfg' ps'
-          SViaHash SHashFuncB3 -> do
-            ps <- prep @v cfg.patchscriptFormat bs
-            case cfg.cmd of
-              CCmdPatch'   cfg' -> cmdPatchBinCompareFwd cfg' ps
-              CCmdCompile' cfg' -> Compile.runCompileCompareBin cfg' ps
-          _ -> throwError $ ErrorUnimplemented
 
 -- Parse and prepare/normalize a binrep-compare patchscript, polymorphic on the
 -- comparison strategy. We can't handle that in here, because you need it when
@@ -226,7 +238,7 @@ prep
     -- grr
      . ( MonadError Error m
        , FromJSON (Compare.CompareRep v Text)
-       , FromJSON (Compare.CompareRep v HexBytestring)
+       , FromJSON (Compare.CompareRep v HexByteString)
        , FromJSON (Compare.CompareRep v (Asm.AsmInstr 'Asm.ArchArmV8ThumbLE))
        , FromJSON (Compare.CompareRep v [Asm.AsmInstr 'Asm.ArchArmV8ThumbLE])
        , Show     (Compare.CompareRep v Bytes)
@@ -237,9 +249,10 @@ prep
     -> Bytes
     -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
 prep cfg bs = case cfg.dataType of
-  CTextPatch    -> throwError $ ErrorUnimplemented
-  CBinPatch     -> prep' @HexBytestring cfg pure bs
-  CTextBinPatch -> prep' @Text          cfg pure bs
+  CTextPatch    -> throwError ErrorUnimplemented
+  CBinPatch     -> prep' @HexByteString cfg pure bs
+  --CTextBinPatch -> throwError ErrorUnimplemented -- prep' @Text          cfg pure bs
+  CTextBinPatch -> prep' @Text @(AsByteString 'C) cfg (error "TODO") bs
   CAsmBinPatch  -> prep' cfg (processAsm @'Asm.ArchArmV8ThumbLE) bs
   CAsmsBinPatch -> prep' cfg (processAsms @'Asm.ArchArmV8ThumbLE) bs
 
@@ -247,7 +260,7 @@ prep cfg bs = case cfg.dataType of
 -- you may want to parse and binrep the same type -- in such cases, use 'pure'.
 prep'
     :: forall a b v m
-    .  ( FromJSON a, BinRep b, Show b
+    .  ( FromJSON a, Put b, BLen b, Show b
        , FromJSON (Compare.CompareRep v a)
        , SingI v
        , Show     (Compare.CompareRep v Bytes)
