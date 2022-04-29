@@ -9,7 +9,7 @@ import Config ( CCmdCompile )
 import StreamPatch.Patch.Compare
 import StreamPatch.Patch
 import Data.ByteString qualified as BS
-import Raehik.HexBytestring ( HexBytestring(..) )
+import Raehik.HexByteString ( Hex(..), HexByteString )
 import StreamPatch.Patch.Binary qualified as Bin
 import StreamPatch.Patch.Compare qualified as Compare
 
@@ -64,14 +64,15 @@ runCompileCompareBin
     :: forall v s m
     .  ( MonadIO m
        , Functor (Seek s v)
-       , ToJSON (SeekRep s), ToJSON (CompareRep v HexBytestring)
+       , ToJSON (SeekRep s), ToJSON (CompareRep v HexByteString)
        )
     => CCmdCompile
     -> [Patch s '[Compare.Meta v, Bin.Meta] BS.ByteString]
     -> m ()
 runCompileCompareBin _cfg ps =
-      let ps' = fmap (fmap HexBytestring . convertBackBin) ps
-       in liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'
+      let ps'bs  = fmap convertBackBin ps
+          ps'hex = fmap (fmap Hex) ps'bs
+       in liftIO $ BS.putStr $ YamlPretty.encodePretty yamlPrettyCfg ps'hex
 
 -- silly stuff
 yamlPrettyCfg :: YamlPretty.Config

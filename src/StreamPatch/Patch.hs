@@ -9,6 +9,8 @@ import Numeric.Natural            ( Natural )
 import Data.Kind
 import GHC.Generics               ( Generic )
 
+import Data.Aeson
+
 import Data.Singletons.TH
 -- required for deriving instances (seems like bug)
 import Prelude.Singletons hiding ( AbsSym0, Compare )
@@ -41,3 +43,6 @@ deriving stock instance (Show a, Show (SeekRep s), Show (HFunctorList fs a)) => 
 deriving stock instance Functor     (HFunctorList fs) => Functor     (Patch s fs)
 deriving stock instance Foldable    (HFunctorList fs) => Foldable    (Patch s fs)
 deriving stock instance Traversable (HFunctorList fs) => Traversable (Patch s fs)
+
+instance ( ToJSON a, ToJSON (SeekRep s), ToJSON (HFunctorList fs a)
+         ) => ToJSON (Patch s fs a)

@@ -2,8 +2,21 @@ resolver: nightly-2022-03-30
 packages: [.]
 
 extra-deps:
+
 - git: https://github.com/raehik/keystone
   subdir: bindings/haskell
   # can't select branch -- bindings-haskell-build-fix-include
   commit: 93f1939eb08104f26b86cb9e8f4406808dd6c89d
+
 - blake3-0.2@sha256:d1146b9a51ccfbb0532780778b6d016a614e3d44c05d8c1923dde9a8be869045,2448
+
+- git: https://github.com/raehik/binrep
+  commit: 01f53e868d1c6895243796d06687197d216f1bfb
+
+# binrep currently depends on my predicate polykind fix
+- git: https://github.com/raehik/refined
+  commit: 952e0348348aaf11c8b93c6e1ac6d33a0cbbb6b1
+
+# binrep currently depends on my cereal fork
+- git: https://github.com/raehik/cereal
+  commit: 1c2e1fc36bb1cd18eb4843a0998b938464005b01

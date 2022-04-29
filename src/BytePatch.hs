@@ -3,7 +3,6 @@
 
 module BytePatch where
 
-import BytePatch.Orphans()
 import StreamPatch.Patch
 import StreamPatch.HFunctorList
 import StreamPatch.Patch.Binary qualified as Bin
@@ -37,9 +36,9 @@ data Seek (s :: SeekKind) (v :: Via) a = Seek
   , sAligned        :: Maybe Natural
   } deriving (Generic)
 
-instance Functor     (Seek s ('ViaEq p)) where
+instance Functor     (Seek s ('ViaEq p))     where
     fmap f (Seek s c n m a) = Seek s (fmap f c) n m a
-instance Functor     (Seek s ('ViaHash h)) where
+instance Functor     (Seek s ('ViaDigest h)) where
     fmap _ (Seek s c n m a) = Seek s c n m a
 
 deriving instance (Eq   a, Eq   (SeekRep s), Eq   (CompareRep v a)) => Eq   (Seek s v a)

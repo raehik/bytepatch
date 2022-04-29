@@ -91,7 +91,7 @@ pCCompareVia = option (maybeReader mapper) $
   where mapper = \case "equal"  -> Just $ Compare.ViaEq Compare.Exact
                        "prefix" -> Just $ Compare.ViaEq Compare.PrefixOf
                        "size"   -> Just Compare.ViaSize
-                       "hashB3" -> Just $ Compare.ViaHash Compare.HashFuncB3
+                       "hashB3" -> Just $ Compare.ViaDigest Compare.B3
                        _        -> Nothing
 
 

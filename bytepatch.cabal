@@ -32,9 +32,9 @@ library
       Binrep.Type.Assembly.Assemble
       Binrep.Type.Assembly.Disassemble
       BytePatch
-      BytePatch.Orphans
-      Raehik.HexBytestring
+      Raehik.HexByteString
       StreamPatch.Apply
+      StreamPatch.Example
       StreamPatch.HFunctorList
       StreamPatch.Patch
       StreamPatch.Patch.Align
@@ -83,6 +83,7 @@ library
   build-depends:
       aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
+    , binrep
     , blake3 ==0.2.*
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
@@ -145,6 +146,7 @@ executable bytepatch
   build-depends:
       aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
+    , binrep
     , blake3 ==0.2.*
     , bytepatch
     , bytestring >=0.10 && <0.12
@@ -215,6 +217,7 @@ test-suite spec
       QuickCheck >=2.14.2 && <2.15
     , aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
+    , binrep
     , blake3 ==0.2.*
     , bytepatch
     , bytestring >=0.10 && <0.12

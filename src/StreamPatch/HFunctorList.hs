@@ -5,10 +5,17 @@ module StreamPatch.HFunctorList where
 import Data.Vinyl
 import Data.Vinyl.TypeLevel ( RDelete, RIndex )
 import Control.Applicative  ( liftA2 )
-import GHC.Generics         ( Generic )
+import GHC.Generics         ( Generic, Rep )
 import Foreign.Storable     ( Storable )
 
 import Optics
+
+import Data.Aeson
+
+instance ( ToJSON (Flap a r), Generic (Rec (Flap a) rs)
+         , GToJSON' Value Zero (Rep (Rec (Flap a) rs))
+         , GToJSON' Encoding Zero (Rep (Rec (Flap a) rs))
+         ) => ToJSON (Rec (Flap a) (r ': rs))
 
 -- | A heterogeneous list of functors over 'a'. Each type in the list
 --   corresponds to a single value.
@@ -18,6 +25,8 @@ import Optics
 -- it provides everything we need other than some newtypes to swap types around.
 newtype HFunctorList fs a = HFunctorList { getHFunctorList :: Rec (Flap a) fs }
     deriving stock (Generic)
+
+deriving via (Rec (Flap a) fs) instance ToJSON (Rec (Flap a) fs) => ToJSON (HFunctorList fs a)
 
 deriving instance (ReifyConstraint Show (Flap a) fs, RMap fs, RecordToList fs) => Show (HFunctorList fs a)
 deriving instance Eq        (Rec (Flap a) fs) => Eq        (HFunctorList fs a)
@@ -76,8 +85,9 @@ instance (Traversable r, Traversable (HFunctorList rs)) => Traversable (HFunctor
 -- | Flipped apply: a single value at 'f a', but with "flipped" type arguments.
 --   Very useless - has no Functor nor Contravariant nor HFunctor instance.
 newtype Flap a f = Flap { getFlap :: f a }
-    deriving stock   (Eq, Show, Ord, Generic)
+    deriving stock   (Generic, Show, Eq, Ord)
     deriving Storable via (f a)
+    deriving (ToJSON, FromJSON) via (f a)
 
 --------------------------------------------------------------------------------
 

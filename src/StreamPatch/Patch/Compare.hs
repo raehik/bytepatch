@@ -21,7 +21,7 @@ import Control.Monad ( void )
 import GHC.Exts ( Proxy#, proxy# )
 import GHC.TypeLits ( KnownSymbol, symbolVal' )
 
-import Raehik.HexBytestring
+import Raehik.HexByteString
 
 import Data.Aeson qualified as Aeson
 import Data.Aeson ( ToJSON(..), FromJSON(..) )
@@ -32,6 +32,8 @@ import Text.Megaparsec.Char.Lexer qualified as MCL
 
 import BLAKE3 qualified as B3
 import Data.ByteArray qualified as BA
+import Data.ByteString qualified as B
+import Data.Word ( Word8 )
 
 import Data.Singletons.TH
 -- required for deriving instances (seems like bug)
@@ -49,9 +51,9 @@ deriving stock instance Generic EqualityCheck
 
 $(singletons [d|
     data HashFunc
-      = HashFuncB3
-      | HashFuncSHA256
-      | HashFuncMD5
+      = B3
+      | SHA256
+      | MD5
         deriving stock (Eq, Show)
     |])
 deriving stock instance Generic HashFunc
@@ -65,8 +67,8 @@ $(singletons [d|
       -- | Do they have the same size?
       | ViaSize
 
-      -- | Do they have the same hash under the given hash function?
-      | ViaHash HashFunc
+      -- | Do they have the same digest under the given hash function?
+      | ViaDigest HashFunc
         deriving (Eq, Show)
     |])
 deriving stock instance Generic Via
@@ -78,75 +80,83 @@ data Meta (v :: Via) a = Meta
 deriving stock instance Eq   (CompareRep v a) => Eq   (Meta v a)
 deriving stock instance Show (CompareRep v a) => Show (Meta v a)
 
+deriving anyclass instance ToJSON   (CompareRep v a) => ToJSON   (Meta v a)
+deriving anyclass instance FromJSON (CompareRep v a) => FromJSON (Meta v a)
+
 instance SingI v => Functor     (Meta v) where
     fmap f (Meta c) = case sing @v of
-      SViaEq   _ -> Meta $ fmap f c
-      SViaSize   -> Meta c
-      SViaHash _ -> Meta c
+      SViaEq     _ -> Meta $ fmap f c
+      SViaSize     -> Meta c
+      SViaDigest _ -> Meta c
 
 instance SingI v => Foldable    (Meta v) where
     foldMap f (Meta c) = case sing @v of
-      SViaEq   _ -> foldMap f c
-      SViaSize   -> mempty
-      SViaHash _ -> mempty
+      SViaEq     _ -> foldMap f c
+      SViaSize     -> mempty
+      SViaDigest _ -> mempty
 
 instance SingI v => Traversable (Meta v) where
     traverse f (Meta c) = case sing @v of
-      SViaEq   _ -> Meta <$> traverse f c
-      SViaSize   -> pure $ Meta c
-      SViaHash _ -> pure $ Meta c
+      SViaEq     _ -> Meta <$> traverse f c
+      SViaSize     -> pure $ Meta c
+      SViaDigest _ -> pure $ Meta c
 
 type family CompareRep (v :: Via) a where
-    CompareRep ('ViaEq _) a   = a
-    CompareRep 'ViaSize _     = Natural
-    CompareRep ('ViaHash h) _ = Hash h
+    CompareRep ('ViaEq _)     a = a
+    CompareRep 'ViaSize       _ = Natural
+    CompareRep ('ViaDigest h) _ = Digest h B.ByteString
 
--- | A bytestring representing the output of hashing something using the given
---   hash function.
+-- | The resulting digest from hashing some data using the given hash function.
 --
--- TODO use ShortByteString instead
-newtype Hash (h :: HashFunc) = Hash { hashBytes :: BS.ByteString }
+-- TODO
+-- As of 2022, most good cryptographic hash functions produce digest sizes
+-- between 256-512 bits. That's 32-64 bytes. So I want to use a ShortByteString,
+-- but the BLAKE3 library uses the memory library, which I can't figure out. I
+-- bet it'd be more efficient. So, I'm polymorphising in preparation.
+newtype Digest (h :: HashFunc) a = Digest { getDigest :: a }
     deriving stock (Generic, Eq, Show)
 
--- may as well do it at type level lol
-type family HashFuncLabel (h :: HashFunc) where
-    HashFuncLabel 'HashFuncB3     = "b3"
-    HashFuncLabel 'HashFuncSHA256 = "sha256"
-    HashFuncLabel 'HashFuncMD5    = "md5"
+type Digest' h = Digest h B.ByteString
 
--- ...but we will need to reflect the 'Symbol' to value level
+type family HashFuncLabel (h :: HashFunc) where
+    HashFuncLabel 'B3     = "b3"
+    HashFuncLabel 'SHA256 = "sha256"
+    HashFuncLabel 'MD5    = "md5"
+
 hashFuncLabel :: forall h l. (l ~ HashFuncLabel h, KnownSymbol l) => Text
 hashFuncLabel = Text.pack (symbolVal' (proxy# :: Proxy# l))
 
+-- | Add a @digest:@ prefix to better separate from regular text.
+instance (l ~ HashFuncLabel h, KnownSymbol l) => ToJSON   (Digest h B.ByteString) where
+    toJSON = Aeson.String . Text.append "digest:" . prettyDigest B.unpack
+
+instance (l ~ HashFuncLabel h, KnownSymbol l) => FromJSON (Digest h B.ByteString) where
+    parseJSON = Aeson.withText "hex hash digest" $ \t ->
+        case parseMaybe @Void parseDigest t of
+          Nothing   -> fail "failed to parse hex hash digest"
+          Just hash -> pure hash
+
 -- | Pretty print a hash like @hashfunc:123abc@.
-prettyHash :: forall h l. (l ~ HashFuncLabel h, KnownSymbol l) => Hash h -> Text
-prettyHash h =
+prettyDigest
+    :: forall h a l. (l ~ HashFuncLabel h, KnownSymbol l)
+    => (a -> [Word8]) -> Digest h a -> Text
+prettyDigest unpack (Digest d) =
        hashFuncLabel @h
     <> Text.singleton ':'
-    <> prettyHexBytestringCompact (hashBytes h)
-
--- | Add a @hash:@ prefix to better separate from regular text.
-instance (l ~ HashFuncLabel h, KnownSymbol l) => ToJSON   (Hash h) where
-    toJSON = Aeson.String . Text.append "hash:" . prettyHash
-
-instance (l ~ HashFuncLabel h, KnownSymbol l) => FromJSON (Hash h) where
-    parseJSON = Aeson.withText "hash string" $ \t ->
-        case parseMaybe @Void parseHash t of
-          Nothing   -> fail "failed to parse hash"
-          Just hash -> pure hash
+    <> prettyHexByteStringCompact unpack d
 
 -- Bad naming, these maybe aren't symbols/lexemes in the expected sense
 -- (horizontal spacing is optional).
-parseHash
+parseDigest
     :: forall h l e s m
     .  (l ~ HashFuncLabel h, KnownSymbol l, MonadParsec e s m, Token s ~ Char, Tokens s ~ Text)
-    => m (Hash h)
-parseHash = do
-    symbol "hash"
+    => m (Digest h B.ByteString)
+parseDigest = do
+    symbol "digest"
     symbol ":"
     symbol $ hashFuncLabel @h
     symbol ":"
-    Hash <$> parseHexBytestring
+    Digest <$> parseHexBytestring B.pack
   where symbol = void . MCL.lexeme MC.hspace . chunk
 
 class Compare (v :: Via) a where
@@ -162,10 +172,10 @@ instance Eq a => Compare ('ViaEq 'Exact) a where
     compare' c1 c2 | c1 == c2  = Nothing
                    | otherwise = Just "values not equal"
 
-instance Compare ('ViaHash 'HashFuncB3) BS.ByteString where
-    toCompareRep = Hash . hashB3
+instance Compare ('ViaDigest 'B3) BS.ByteString where
+    toCompareRep = Digest . hashB3
     compare' c1 c2 | c1 == c2  = Nothing
-                   | otherwise = Just "hashes not equal"
+                   | otherwise = Just "digests not equal"
 
 -- I unpack to '[Word8]' then repack to 'ByteString' because the memory library
 -- is very keen on complicated unsafe IO. cheers no thanks
@@ -178,5 +188,5 @@ class SwapCompare a (vFrom :: Via) (vTo :: Via) where
 instance SwapCompare a v v where
     swapCompare = Right
 
-instance SwapCompare BS.ByteString ('ViaEq 'Exact) ('ViaHash 'HashFuncB3) where
-    swapCompare = Right . Hash . hashB3
+instance SwapCompare BS.ByteString ('ViaEq 'Exact) ('ViaDigest 'B3) where
+    swapCompare = Right . Digest . hashB3
