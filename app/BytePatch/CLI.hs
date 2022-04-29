@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 
-module CLI ( parse ) where
+module BytePatch.CLI ( parse ) where
 
-import Config
+import BytePatch.Config
 import Options.Applicative
 import Control.Monad.IO.Class
 import StreamPatch.Patch.Compare qualified as Compare
