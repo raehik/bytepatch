@@ -156,7 +156,7 @@ parseDigest = do
     symbol ":"
     symbol $ hashFuncLabel @h
     symbol ":"
-    Digest <$> parseHexBytestring B.pack
+    Digest <$> parseHexByteString B.pack
   where symbol = void . MCL.lexeme MC.hspace . chunk
 
 class Compare (v :: Via) a where

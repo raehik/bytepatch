@@ -1,15 +1,15 @@
 module StreamPatch.Patch.LinearizeSpec ( spec ) where
 
-import           StreamPatch.Patch.Linearize
-import           Test.Hspec
-import           Util
+import StreamPatch.Patch.Linearize
+import Test.Hspec
+import Util
 
-import           StreamPatch.Patch
-import           Data.Functor.Const
-import           Data.Either.Combinators
-import           GHC.Natural
-import           Optics
-import           Data.Generics.Product.Any
+import StreamPatch.Patch
+import Data.Functor.Const
+import Data.Either.Combinators
+import GHC.Natural
+import Optics
+import Data.Generics.Product.Any
 
 spec :: Spec
 spec = do

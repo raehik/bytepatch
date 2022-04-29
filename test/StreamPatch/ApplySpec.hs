@@ -1,15 +1,15 @@
 module StreamPatch.ApplySpec ( spec ) where
 
-import           StreamPatch.Apply
-import           Test.Hspec
-import           Test.Hspec.QuickCheck
-import           Test.QuickCheck
-import           Util
+import StreamPatch.Apply
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck
+import Util
 
-import           StreamPatch.Patch
-import           Data.Functor.Const
-import           Data.Vinyl
-import           GHC.Natural
+import StreamPatch.Patch
+import Data.Functor.Const
+import Data.Vinyl
+import GHC.Natural
 
 spec :: Spec
 spec = do
