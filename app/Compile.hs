@@ -33,12 +33,13 @@ compileMeta
 compileMeta (Meta cmp) = Meta $ fmap (toCompareRep @v) cmp
 
 compilePatch
-    :: forall v s f f' fs fs'
+    :: forall v s f f' fs fs' i
     .  ( Compare v BS.ByteString
        , f  ~ Meta ('ViaEq 'Exact)
        , f' ~ Meta v
-       , RElem f fs (RIndex f fs)
-       , RecElem Rec f f' fs fs' (RIndex f fs)
+       , RElem f fs i
+       , RecElem Rec f f' fs fs' i
+       , i ~ RIndex f fs
        )
     => Patch s fs  BS.ByteString
     -> Patch s fs' BS.ByteString

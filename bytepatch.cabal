@@ -28,6 +28,9 @@ source-repository head
 
 library
   exposed-modules:
+      Binrep.Type.Assembly
+      Binrep.Type.Assembly.Assemble
+      Binrep.Type.Assembly.Disassemble
       BytePatch
       BytePatch.Orphans
       Raehik.HexBytestring
@@ -36,7 +39,6 @@ library
       StreamPatch.Patch
       StreamPatch.Patch.Align
       StreamPatch.Patch.Binary
-      StreamPatch.Patch.Binary.Asm
       StreamPatch.Patch.Compare
       StreamPatch.Patch.Linearize
       StreamPatch.Stream
@@ -77,8 +79,9 @@ library
       UndecidableInstances
       MagicHash
       ScopedTypeVariables
+  ghc-options: -Wall
   build-depends:
-      aeson ==2.0.*
+      aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
     , blake3 ==0.2.*
     , bytestring >=0.10 && <0.12
@@ -93,6 +96,7 @@ library
     , singletons-base ==3.1.*
     , singletons-th ==3.1.*
     , text >=1.2.4.1 && <1.3
+    , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
   default-language: Haskell2010
 
@@ -139,7 +143,7 @@ executable bytepatch
       ScopedTypeVariables
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson ==2.0.*
+      aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
     , blake3 ==0.2.*
     , bytepatch
@@ -156,6 +160,7 @@ executable bytepatch
     , singletons-base ==3.1.*
     , singletons-th ==3.1.*
     , text >=1.2.4.1 && <1.3
+    , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
     , yaml >=0.11.6.0 && <0.12
   default-language: Haskell2010
@@ -208,7 +213,7 @@ test-suite spec
       hspec-discover:hspec-discover >=2.7 && <2.10
   build-depends:
       QuickCheck >=2.14.2 && <2.15
-    , aeson ==2.0.*
+    , aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
     , blake3 ==0.2.*
     , bytepatch
@@ -225,5 +230,6 @@ test-suite spec
     , singletons-base ==3.1.*
     , singletons-th ==3.1.*
     , text >=1.2.4.1 && <1.3
+    , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
   default-language: Haskell2010

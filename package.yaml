@@ -63,10 +63,11 @@ dependencies:
 - vinyl ^>= 0.14.1
 - mtl ^>= 2.2.2
 - bytestring >= 0.10 && < 0.12
-- text ^>= 1.2.4.1
+- text ^>= 1.2.4.1 # TODO want 2.0, blocked by generic-optics
 - megaparsec >= 9.0 && < 9.3
 - either ^>= 5.0.1.1
-- aeson ^>= 2.0
+- aeson ^>= 2.0.2.0 # for ShortText instances
+- text-short ^>= 0.1.5 # for text-2.0
 - optics >= 0.3 && < 0.5
 - generic-optics ^>= 2.2.1.0
 - keystone ^>= 0.1.1.0
@@ -78,6 +79,8 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options:
+  - -Wall
 
 executables:
   bytepatch:
