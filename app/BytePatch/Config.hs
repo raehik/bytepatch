@@ -1,4 +1,4 @@
-module Config where
+module BytePatch.Config where
 
 import GHC.Generics ( Generic )
 import StreamPatch.Patch.Compare qualified as Compare

@@ -31,7 +31,6 @@ library
       Binrep.Type.Assembly
       Binrep.Type.Assembly.Assemble
       Binrep.Type.Assembly.Disassemble
-      BytePatch
       Raehik.HexByteString
       StreamPatch.Apply
       StreamPatch.Example
@@ -40,7 +39,9 @@ library
       StreamPatch.Patch.Align
       StreamPatch.Patch.Binary
       StreamPatch.Patch.Compare
+      StreamPatch.Patch.Compile
       StreamPatch.Patch.Linearize
+      StreamPatch.Simple
       StreamPatch.Stream
       StreamPatch.Util
   other-modules:
@@ -104,9 +105,9 @@ library
 executable bytepatch
   main-is: Main.hs
   other-modules:
-      CLI
-      Compile
-      Config
+      BytePatch
+      BytePatch.CLI
+      BytePatch.Config
       Paths_bytepatch
   hs-source-dirs:
       app

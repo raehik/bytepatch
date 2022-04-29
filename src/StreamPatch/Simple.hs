@@ -1,7 +1,10 @@
+-- | A simplified patch representation that maps between the internal
+--   representation.
+
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module BytePatch where
+module StreamPatch.Simple where
 
 import StreamPatch.Patch
 import StreamPatch.HFunctorList

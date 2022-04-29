@@ -1,14 +1,22 @@
--- | Core patch type definitions: patches, seeks, metadata.
+{- | Core patch type: patches, seeks, metadata container.
+
+This library is based around patches to streams i.e. containers indexed by the
+natural numbers (or integers, depending on your view). As such, we restrict what
+a seek can look like. Parts of the codebase could be generalized to work over
+any seek kind, so you could e.g. write a text patcher that uses line and column
+positions to seek through the data. But you can't transform line and column to
+byte position, at least not without parsing the file. So it would need a lot of
+thought and careful design to generalize in that direction.
+-}
 
 {-# LANGUAGE TemplateHaskell #-}
 
 module StreamPatch.Patch where
 
 import StreamPatch.HFunctorList
-import Numeric.Natural            ( Natural )
-import Data.Kind
-import GHC.Generics               ( Generic )
+import Numeric.Natural ( Natural )
 
+import GHC.Generics ( Generic )
 import Data.Aeson
 
 import Data.Singletons.TH
@@ -16,7 +24,7 @@ import Data.Singletons.TH
 import Prelude.Singletons hiding ( AbsSym0, Compare )
 
 $(singletons [d|
-    -- | What a patch seek value means.
+    -- | What a stream seek value means.
     data SeekKind
       = FwdSeek -- ^ seeks only move cursor forward
       | RelSeek -- ^ seeks are relative e.g. to a universal base, or a stream cursor
@@ -25,14 +33,14 @@ $(singletons [d|
     |])
 deriving stock instance Generic SeekKind
 
--- | Get the representation for a 'SeekKind'. Allows us a bit more safety.
+-- | Get the representation for a 'SeekKind'.
 type family SeekRep (s :: SeekKind) where
     SeekRep 'FwdSeek = Natural
     SeekRep 'RelSeek = Integer
     SeekRep 'AbsSeek = Natural
 
-type Patch :: SeekKind -> [Type -> Type] -> Type -> Type
-data Patch s fs a = Patch
+-- | A single patch on a stream of 'a'.
+data Patch (s :: SeekKind) fs a = Patch
   { patchData :: a
   , patchSeek :: SeekRep s
   , patchMeta :: HFunctorList fs a

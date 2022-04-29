@@ -1,9 +1,10 @@
 # bytepatch
-A Haskell library and CLI tool for patching data in a stream. Write
-**patchscripts** (in-place edits to a file) using a convenient YAML schema, and
-apply them with a safe patching algorithm. On the library side, define patches
-of various forms over any type, apply them to pure/impure streams, and write
-further patch data types and streams to extend as you like.
+A Haskell library and CLI tool for patching data in a stream (containers indexed
+by the naturals/integers). Write **patchscripts** (in-place edits to a file)
+using a convenient YAML schema, and apply them with a safe patching algorithm.
+On the library side, define patches of various forms over any type, apply them
+to pure/impure streams, and write further patch data types and streams to extend
+as you like.
 
 bytepatch works with many data types:
 
