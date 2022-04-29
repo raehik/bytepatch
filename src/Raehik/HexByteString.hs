@@ -33,7 +33,7 @@ instance Show (Hex B.ByteString) where
 
 instance FromJSON (Hex B.ByteString) where
     parseJSON = withText "hex bytestring" $ \t ->
-        case parseMaybe @Void (parseHexBytestring B.pack) t of
+        case parseMaybe @Void (parseHexByteString B.pack) t of
           Nothing -> fail "failed to parse hex bytestring (TODO)"
           Just t' -> pure (Hex t')
 
@@ -45,7 +45,7 @@ instance Show (Hex B.Short.ShortByteString) where
 
 instance FromJSON (Hex B.Short.ShortByteString) where
     parseJSON = withText "hex bytestring" $ \t ->
-        case parseMaybe @Void (parseHexBytestring B.Short.pack) t of
+        case parseMaybe @Void (parseHexByteString B.Short.pack) t of
           Nothing -> fail "failed to parse hex bytestring (TODO)"
           Just t' -> pure (Hex t')
 
@@ -54,10 +54,10 @@ instance ToJSON   (Hex B.Short.ShortByteString) where
 
 -- | A hex bytestring looks like this: @00 01 89 8a   FEff@. You can mix and
 -- match capitalization and spacing, but I prefer to space each byte, full caps.
-parseHexBytestring
+parseHexByteString
     :: (MonadParsec e s m, Token s ~ Char)
     => ([Word8] -> a) -> m a
-parseHexBytestring pack = pack <$> parseHexByte `sepBy` MC.hspace
+parseHexByteString pack = pack <$> parseHexByte `sepBy` MC.hspace
 
 -- | Parse a byte formatted as two hex digits e.g. EF. You _must_ provide both
 -- nibbles e.g. @0F@, not @F@. They cannot be spaced e.g. @E F@ is invalid.

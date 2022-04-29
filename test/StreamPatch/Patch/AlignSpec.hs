@@ -1,14 +1,14 @@
 module StreamPatch.Patch.AlignSpec ( spec ) where
 
-import           StreamPatch.Patch.Align
-import           Test.Hspec
-import           Util
+import StreamPatch.Patch.Align
+import Test.Hspec
+import Util
 
-import           StreamPatch.Patch
-import           StreamPatch.HFunctorList
-import           Data.Vinyl
-import           Data.Functor.Const
-import           GHC.Natural
+import StreamPatch.Patch
+import StreamPatch.HFunctorList
+import Data.Vinyl
+import Data.Functor.Const
+import GHC.Natural
 
 makeUnalignedPatch
     :: [(Integer, a)]

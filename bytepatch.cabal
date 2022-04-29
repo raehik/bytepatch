@@ -172,7 +172,7 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Raehik.HexBytestringSpec
+      Raehik.HexByteStringSpec
       StreamPatch.ApplySpec
       StreamPatch.Patch.AlignSpec
       StreamPatch.Patch.LinearizeSpec
