@@ -2,17 +2,11 @@
 
 module Util where
 
-import           StreamPatch.Patch
-import           StreamPatch.HFunctorList
-import           Data.Vinyl
-import           Text.Megaparsec
-import           Data.Void
-import           GHC.Natural
-import           Test.QuickCheck
-
---parseFromCharStream :: (MonadParsec e s m, Token s ~ Char) => m a -> s -> Maybe a
-parseFromCharStream :: forall s a. (Stream s, Token s ~ Char) => Parsec Void s a -> s -> Maybe a
-parseFromCharStream parser text = parseMaybe parser text
+import StreamPatch.Patch
+import StreamPatch.HFunctorList
+import Data.Vinyl
+import GHC.Natural
+import Test.QuickCheck
 
 -- TODO this is in quickcheck-instances
 instance Arbitrary Natural where

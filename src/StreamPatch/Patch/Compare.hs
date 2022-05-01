@@ -21,7 +21,7 @@ import Control.Monad ( void )
 import GHC.Exts ( Proxy#, proxy# )
 import GHC.TypeLits ( KnownSymbol, symbolVal' )
 
-import Raehik.HexByteString
+import Binrep.Extra.HexByteString
 
 import Data.Aeson qualified as Aeson
 import Data.Aeson ( ToJSON(..), FromJSON(..) )

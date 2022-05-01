@@ -8,7 +8,7 @@ import Data.ByteString ( ByteString )
 import Data.Text.Short ( ShortText )
 import Data.Aeson ( ToJSON, FromJSON )
 
-import Raehik.HexByteString
+import Binrep.Extra.HexByteString
 
 import Binrep
 

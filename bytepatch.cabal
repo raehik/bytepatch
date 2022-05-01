@@ -31,7 +31,6 @@ library
       Binrep.Type.Assembly
       Binrep.Type.Assembly.Assemble
       Binrep.Type.Assembly.Disassemble
-      Raehik.HexByteString
       StreamPatch.Apply
       StreamPatch.Example
       StreamPatch.HFunctorList
@@ -172,7 +171,6 @@ test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Raehik.HexByteStringSpec
       StreamPatch.ApplySpec
       StreamPatch.Patch.AlignSpec
       StreamPatch.Patch.LinearizeSpec

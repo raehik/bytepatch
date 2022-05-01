@@ -19,7 +19,7 @@ import StreamPatch.Patch.Compare ( Via(..), SVia(..), SEqualityCheck(..), HashFu
 import StreamPatch.Apply qualified as Apply
 import StreamPatch.Simple as Simple
 
-import Raehik.HexByteString
+import Binrep.Extra.HexByteString
 
 import Binrep.Type.Assembly qualified as Asm
 import Binrep.Type.Assembly.Assemble qualified as Asm
@@ -256,11 +256,17 @@ prep
     -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
 prep cfg bs = case cfg.dataType of
   CTextPatch    -> throwError ErrorUnimplemented
-  CBinPatch     -> prep' @HexByteString cfg pure bs
+  CBinPatch     -> prep' @HexByteString cfg (return . fmap unHexPatch) bs
   --CTextBinPatch -> throwError ErrorUnimplemented -- prep' @Text          cfg pure bs
   CTextBinPatch -> prep' @Text @(AsByteString 'C) cfg (error "TODO") bs
   CAsmBinPatch  -> prep' cfg (processAsm @'Asm.ArchArmV8ThumbLE) bs
   CAsmsBinPatch -> prep' cfg (processAsms @'Asm.ArchArmV8ThumbLE) bs
+
+unHexPatch
+    :: Functor (HFunctorList fs)
+    => Patch s fs HexByteString
+    -> Patch s fs B.ByteString
+unHexPatch = fmap unHex
 
 -- Binrep-compare, parsing @a@ and failably converting to @b@, In many cases,
 -- you may want to parse and binrep the same type -- in such cases, use 'pure'.
