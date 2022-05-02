@@ -1,3 +1,10 @@
+## Internals
+  * Move stream-time binary meta to prep-time. Can't I just extend the compare
+    value with the nulls? It would break equality comparisons, but they're silly
+    anyway for null-terminated strings. So it'd be a "good" breakage.
+    * Also, I should definitely change to "succeeding nulls" rather than "null
+      terminates at index". Safer, more obvious
+
 ## aeson instances for `Patch`
 I had great initial success via aeson's & vinyl's generics!! But not enough:
 

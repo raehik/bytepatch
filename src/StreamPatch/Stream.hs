@@ -1,3 +1,11 @@
+{- | Stream monads.
+
+By stream, I mean a container indexed by the naturals(/integers). Note that not
+all parts of streampatch are limited to this, but it's an extremely useful
+invariant, without which patch linearization & application gets a whole lot more
+complex. So for now, streams it is.
+-}
+
 module StreamPatch.Stream where
 
 import           GHC.Natural

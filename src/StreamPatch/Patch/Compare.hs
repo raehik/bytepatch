@@ -80,7 +80,6 @@ deriving stock instance Generic  Via
 deriving stock instance Typeable Via
 deriving stock instance Data     Via
 
-
 data Meta (v :: Via) a = Meta
   { mCompare :: Maybe (CompareRep v a)
   } deriving stock (Generic)
