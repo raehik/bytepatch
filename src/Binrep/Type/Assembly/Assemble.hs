@@ -20,7 +20,7 @@ assemble1
     => AsmInstr arch -> Either String (MachineCode arch)
 assemble1 inst = assemble [inst]
 
-instance Assemble 'ArchArmV8ThumbLE where
+instance Assemble 'ArmV8ThumbLE where
     assemble =
           fmap MachineCode
         . unsafeDupablePerformIO

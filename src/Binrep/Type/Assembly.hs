@@ -13,7 +13,7 @@ import Binrep.Extra.HexByteString
 import Binrep
 
 data Arch
-  = ArchArmV8ThumbLE
+  = ArmV8ThumbLE
     deriving stock (Generic, Typeable, Data, Show, Eq)
 
 newtype MachineInstr (arch :: Arch) = MachineInstr { getMachineInstr :: ShortByteString }

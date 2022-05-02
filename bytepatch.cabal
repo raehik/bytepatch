@@ -107,6 +107,7 @@ executable bytepatch
       BytePatch
       BytePatch.CLI
       BytePatch.Config
+      Raehik.CLI.Stream
       Paths_bytepatch
   hs-source-dirs:
       app
@@ -158,6 +159,7 @@ executable bytepatch
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , optparse-applicative ==0.17.*
+    , refined >=0.6.3 && <0.7
     , singletons ==3.0.*
     , singletons-base ==3.1.*
     , singletons-th ==3.1.*

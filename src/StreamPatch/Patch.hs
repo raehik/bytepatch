@@ -17,6 +17,8 @@ import StreamPatch.HFunctorList
 import Numeric.Natural ( Natural )
 
 import GHC.Generics ( Generic )
+import Data.Data ( Typeable, Data )
+
 import Data.Aeson
 
 import Data.Singletons.TH
@@ -29,9 +31,11 @@ $(singletons [d|
       = FwdSeek -- ^ seeks only move cursor forward
       | RelSeek -- ^ seeks are relative e.g. to a universal base, or a stream cursor
       | AbsSeek -- ^ seeks specify an exact offset in stream
-        deriving stock (Eq, Show)
+        deriving stock (Show, Eq)
     |])
-deriving stock instance Generic SeekKind
+deriving stock instance Generic  SeekKind
+deriving stock instance Typeable SeekKind
+deriving stock instance Data     SeekKind
 
 -- | Get the representation for a 'SeekKind'.
 type family SeekRep (s :: SeekKind) where

@@ -1,56 +1,63 @@
 module BytePatch.Config where
 
 import GHC.Generics ( Generic )
+import Data.Data ( Typeable, Data )
 import StreamPatch.Patch.Compare qualified as Compare
 import StreamPatch.Patch ( SeekKind )
 
-data Config = Config
-  { patchscriptFormat :: CPatchscriptFormat
-  , patchscriptPath   :: FilePath
-  , cmd               :: CCmd
-  } deriving (Eq, Show, Generic)
+import Binrep.Type.Text qualified as BR.Text
+import Binrep.Type.ByteString qualified as BR.ByteString
+import Binrep.Type.Assembly qualified as BR.Asm
+
+import Raehik.CLI.Stream
+
+data C = C
+  { cPsFmt  :: CPsFmt
+  , cPsPath :: Path 'In "patchscript file"
+  , cCmd    :: CCmd
+  } deriving stock (Generic, Typeable, Data, Show, Eq)
+
+data CPsFmt = CPsFmt
+  { cPsFmtData    :: CData
+  , cPsFmtAlign   :: CAlign
+  , cPsFmtCompare :: Compare.Via
+  , cPsFmtSeek    :: SeekKind
+  } deriving stock (Generic, Typeable, Data, Show, Eq)
+
+-- | What the patch data indicates (base and target representation).
+data CData
+  = CDataBytes
+  -- ^ Raw bytes (via hex), patched directly over a bytestring.
+
+  | CDataTextBin BR.Text.Encoding BR.ByteString.Rep
+  -- ^ Text, which is to be encoded to the given character encoding and placed
+  --   in the given bytestring representation, then patched over a bytestring.
+
+  | CDataAsm BR.Asm.Arch
+  -- ^ Assembly instructions for the given architecture, which is to be
+  --   assembled into machine code for the architecture, then patched over a
+  --   bytestring.
+
+  | CDataText
+  -- ^ Text, which is to be patched directly over @Text@.
+    deriving stock (Generic, Typeable, Data, Show, Eq)
 
 data CCmd
   = CCmdPatch' CCmdPatch
   | CCmdCompile' CCmdCompile
-    deriving (Eq, Show, Generic)
+    deriving stock (Generic, Typeable, Data, Show, Eq)
 
 data CCmdPatch = CCmdPatch
-  { streamPair  :: CStreamPair
-  , printBinary :: Bool
-  } deriving (Eq, Show, Generic)
+  { cCmdPatchStreamIn    :: Stream 'In  "stream to patch"
+  , cCmdPatchStreamOut   :: Stream 'Out "stream"
+  , cCmdPatchPrintBinary :: Bool
+  } deriving stock (Generic, Typeable, Data, Show, Eq)
 
 -- TODO
 data CCmdCompile = CCmdCompile
-    deriving (Eq, Show, Generic)
-
-data CStreamPair = CStreamPair
-  { streamIn  :: CStream
-  , streamOut :: CStream
-  } deriving (Eq, Show, Generic)
-
--- | "Single file" stream.
-data CStream
-  = CStreamFile FilePath
-  | CStreamStd
-    deriving (Eq, Show, Generic)
-
-data CPatchscriptFormat = CPatchscriptFormat
-  { dataType :: CPatchDataType
-  , align    :: CAlign
-  , compare  :: Compare.Via
-  , seek     :: SeekKind
-  } deriving (Eq, Show, Generic)
+    deriving stock (Generic, Typeable, Data, Show, Eq)
 
 data CAlign
   = CAlign   -- ^ Patch has alignment data.
   | CNoAlign -- ^ Patch does not have alignment data.
-    deriving (Eq, Show, Generic)
-
-data CPatchDataType
-  = CTextPatch      -- ^ Patch 'Text' over a 'Text' stream.
-  | CBinPatch       -- ^ Patch bytestrings over a bytestream.
-  | CTextBinPatch   -- ^ Patch 'Text' over a bytestream.
-  | CAsmBinPatch    -- ^ Patch ARMv8 Thumb (LE) assembly over a bytestream.
-  | CAsmsBinPatch   -- ^ Patch many ARMv8 Thumb (LE) instrs over a bytestream.
-    deriving (Eq, Show, Generic)
+    deriving stock (Generic, Typeable, Data, Show, Eq)

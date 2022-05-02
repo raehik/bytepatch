@@ -3,20 +3,29 @@
 module BytePatch.CLI ( parse ) where
 
 import BytePatch.Config
+import Raehik.CLI.Stream
+
 import Options.Applicative
 import Control.Monad.IO.Class
 import StreamPatch.Patch.Compare qualified as Compare
 import StreamPatch.Patch ( SeekKind(..) )
 
-parse :: MonadIO m => m Config
-parse = execParserWithDefaults desc pConfig
-  where desc = "Patch bytestrings (TODO)."
+import Binrep.Type.Assembly qualified as BR.Asm
+import Binrep.Type.ByteString qualified as BR.ByteString
+import Binrep.Type.Text qualified as BR.Text
 
-pConfig :: Parser Config
-pConfig = Config
-    <$> pCPatchscriptFormat
-    <*> strArgument (metavar "PATCHSCRIPT" <> help "Path to patchscript")
-    <*> pCCmd
+parse :: MonadIO m => m C
+parse = execParserWithDefaults desc pC
+  where desc = "Patch data in a stream."
+
+pC :: Parser C
+pC = C <$> pCPsFmt <*> pPathIn <*> pCCmd
+
+pCPsFmt :: Parser CPsFmt
+pCPsFmt = CPsFmt <$> pCData
+                 <*> pCAlign
+                 <*> pCCompareVia
+                 <*> pSeekKind
 
 pCCmd :: Parser CCmd
 pCCmd = hsubparser $
@@ -27,25 +36,10 @@ pCCmd = hsubparser $
     descCompile = "\"Compile\" patchscript to a processed form."
 
 pCCmdPatch :: Parser CCmdPatch
-pCCmdPatch = CCmdPatch <$> pCStreamPair <*> pPrintBinary
+pCCmdPatch = CCmdPatch <$> pStreamIn <*> pStreamOut <*> pPrintBinary
 
 pCCmdCompile :: Parser CCmdCompile
 pCCmdCompile = pure CCmdCompile
-
-pCStreamPair :: Parser CStreamPair
-pCStreamPair = CStreamPair <$> pCSIn <*> pCSOut
-  where
-    pCSIn    = pFileArg <|> pStdin
-    pCSOut   = pFileOpt <|> pure CStreamStd
-    pFileArg = CStreamFile <$> strArgument (metavar "FILE" <> help "Input file")
-    pFileOpt = CStreamFile <$> strOption (metavar "FILE" <> long "out-file" <> short 'o' <> help "Output file")
-    pStdin   = flag' CStreamStd (long "stdin"  <> help "Use stdin")
-
-pCPatchscriptFormat :: Parser CPatchscriptFormat
-pCPatchscriptFormat = CPatchscriptFormat <$> pCPatchDataType
-                                         <*> pCAlign
-                                         <*> pCCompareVia
-                                         <*> pSeekKind
 
 pSeekKind :: Parser SeekKind
 pSeekKind = option (maybeReader mapper) $
@@ -58,19 +52,17 @@ pSeekKind = option (maybeReader mapper) $
                        "rel" -> Just RelSeek
                        _     -> Nothing
 
-pCPatchDataType :: Parser CPatchDataType
-pCPatchDataType = option (maybeReader mapper) $
+pCData :: Parser CData
+pCData = option (maybeReader mapper) $
        long "type"
     <> short 't'
-    <> help "How to interpret & use patch data (binary/text/text-only/asm)"
+    <> help "Patch data meaning (see docs for full help)"
     <> metavar "PATCH_TYPE"
-  where mapper = \case "text-only" -> Just CTextPatch
-                       "bin"       -> Just CBinPatch
-                       "binary"    -> Just CBinPatch
-                       "text"      -> Just CTextBinPatch
-                       "asm"       -> Just CAsmBinPatch
-                       "asms"      -> Just CAsmsBinPatch
-                       _           -> Nothing
+  where mapper = \case "bin"              -> Just CDataBytes
+                       "text-bin,utf8,c"  -> Just $ CDataTextBin BR.Text.UTF8 BR.ByteString.C
+                       "asm,armv8thumble" -> Just $ CDataAsm BR.Asm.ArmV8ThumbLE
+                       "text-plain"       -> Just CDataText
+                       _                  -> Nothing
 
 pCAlign :: Parser CAlign
 pCAlign = flag CNoAlign CAlign $

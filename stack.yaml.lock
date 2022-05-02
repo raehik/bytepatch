@@ -30,11 +30,11 @@ packages:
     git: https://github.com/raehik/binrep
     pantry-tree:
       size: 2507
-      sha256: 6449a45274886e40e0e2875a7bf685b45a02b498e26aede069cd22eb8a13ed96
-    commit: ba208b2c93563ea68c4dd9c643f935679ba760df
+      sha256: c8901cbed29f72172f814c660959c3c0fa7911f5758d4cfc3233213dbac411eb
+    commit: ec9d7d57f052511eeddeaa8b048691f6842dc780
   original:
     git: https://github.com/raehik/binrep
-    commit: ba208b2c93563ea68c4dd9c643f935679ba760df
+    commit: ec9d7d57f052511eeddeaa8b048691f6842dc780
 - completed:
     name: refined
     version: 0.6.3

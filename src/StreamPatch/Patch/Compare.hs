@@ -9,6 +9,7 @@
 module StreamPatch.Patch.Compare where
 
 import GHC.Generics ( Generic )
+import Data.Data ( Typeable, Data )
 
 import Numeric.Natural
 import Data.ByteString qualified as BS
@@ -45,18 +46,22 @@ $(singletons [d|
     data EqualityCheck
       = Exact -- ^ "Exact equality" is defined as whatever the 'Eq' class does. (lol)
       | PrefixOf
-        deriving stock (Eq, Show)
+        deriving stock (Show, Eq)
     |])
-deriving stock instance Generic EqualityCheck
+deriving stock instance Generic  EqualityCheck
+deriving stock instance Typeable EqualityCheck
+deriving stock instance Data     EqualityCheck
 
 $(singletons [d|
     data HashFunc
       = B3
       | SHA256
       | MD5
-        deriving stock (Eq, Show)
+        deriving stock (Show, Eq)
     |])
-deriving stock instance Generic HashFunc
+deriving stock instance Generic  HashFunc
+deriving stock instance Typeable HashFunc
+deriving stock instance Data     HashFunc
 
 $(singletons [d|
     -- | How should we compare two values?
@@ -69,9 +74,12 @@ $(singletons [d|
 
       -- | Do they have the same digest under the given hash function?
       | ViaDigest HashFunc
-        deriving (Eq, Show)
+        deriving stock (Show, Eq)
     |])
-deriving stock instance Generic Via
+deriving stock instance Generic  Via
+deriving stock instance Typeable Via
+deriving stock instance Data     Via
+
 
 data Meta (v :: Via) a = Meta
   { mCompare :: Maybe (CompareRep v a)
@@ -167,15 +175,23 @@ compareTo :: forall v a. Compare v a => CompareRep v a -> a -> Maybe String
 compareTo cmp = compare' @v @a cmp . toCompareRep @v @a
 
 -- Free instance: Compare for exact equality via 'Eq'.
-instance Eq a => Compare ('ViaEq 'Exact) a where
+-- TODO show is bandaid. no need to handle it here.
+instance (Eq a, Show a) => Compare ('ViaEq 'Exact) a where
     toCompareRep = id
     compare' c1 c2 | c1 == c2  = Nothing
-                   | otherwise = Just "values not equal"
+                   | otherwise = Just $ "values not equal: "<>show c1<>" /= "<>show c2
 
 instance Compare ('ViaDigest 'B3) BS.ByteString where
     toCompareRep = Digest . hashB3
     compare' c1 c2 | c1 == c2  = Nothing
                    | otherwise = Just "digests not equal"
+
+-- TODO I need to define the compare class better lol, I'm confused which is
+-- real and which is test.
+instance Compare ('ViaEq 'PrefixOf) BS.ByteString where
+    toCompareRep = id
+    compare' c1 c2 | c2 `B.isPrefixOf` c1 = Nothing
+                   | otherwise = Just $ "prefix compare check fail: "<>show c1<>" vs. "<>show c2
 
 -- I unpack to '[Word8]' then repack to 'ByteString' because the memory library
 -- is very keen on complicated unsafe IO. cheers no thanks

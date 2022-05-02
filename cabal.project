@@ -11,7 +11,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/raehik/binrep
-  tag: ba208b2c93563ea68c4dd9c643f935679ba760df
+  tag: ec9d7d57f052511eeddeaa8b048691f6842dc780
 
 -- binrep currently depends on my predicate polykind fix
 source-repository-package

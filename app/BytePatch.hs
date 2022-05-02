@@ -4,6 +4,7 @@
 module BytePatch where
 
 import BytePatch.Config
+import Raehik.CLI.Stream
 import BytePatch.CLI qualified as CLI
 import StreamPatch.Patch.Compile qualified as Compile
 
@@ -24,9 +25,13 @@ import Binrep.Extra.HexByteString
 import Binrep.Type.Assembly qualified as Asm
 import Binrep.Type.Assembly.Assemble qualified as Asm
 import Binrep.Type.Assembly.Assemble ( Assemble )
+import Binrep.Type.Text qualified as BR.Text
+import Binrep.Type.ByteString qualified as BR.ByteString
 
 import Binrep
-import Binrep.Type.ByteString
+import Binrep.Type.ByteString ( AsByteString )
+
+import Refined
 
 import qualified System.Exit as System
 import Numeric.Natural
@@ -157,42 +162,47 @@ processBin = liftMapProcessError (ErrorProcessBinRep . show) . traverse Bin.binR
 main :: IO ()
 main = CLI.parse >>= runReaderT run
 
-run :: forall m. (MonadIO m, MonadReader Config m) => m ()
+run :: forall m. (MonadIO m, MonadReader C m) => m ()
 run = readPatchscriptBs >>= liftProcessError . usePatchscriptBs
   where
-    readPatchscriptBs = asks patchscriptPath >>= readStream . CStreamFile
+    readPatchscriptBs = asks cPsPath >>= liftIO . B.readFile . unPath
     usePatchscriptBs bs = do
         cfg <- ask
-        let cpf = cfg.patchscriptFormat
-        withSomeSing cpf.compare (process cfg bs)
+        let cpf = cfg.cPsFmt
+        withSomeSing cpf.cPsFmtCompare (process cfg bs)
 
 -- using singletons simply to automatically bring type into scope
 process
     :: forall (v :: Via) m
-    .  ( MonadIO m, MonadReader Config m )
-    => Config -> Bytes -> Sing v -> ExceptT Error m ()
+    .  ( MonadIO m, MonadReader C m )
+    => C -> Bytes -> Sing v -> ExceptT Error m ()
 process cfg bs = \case
-      SViaEq   SExact      -> do
-        ps <- prep @v cfg.patchscriptFormat bs
-        case cfg.cmd of
+      SViaEq SExact -> do
+        ps <- prep @v cfg.cPsFmt bs
+        case cfg.cCmd of
           CCmdPatch'   cfg'  -> cmdPatchBinCompareFwd cfg' ps
           CCmdCompile' _cfg' ->
             let ps'  = map (Compile.compilePatch @('ViaDigest 'B3)) ps
                 ps'' = asPrettyYamlHexMultiPatch convertBackBin ps'
              in liftIO $ B.putStr ps''
       SViaDigest SB3 -> do
-        ps <- prep @v cfg.patchscriptFormat bs
-        case cfg.cmd of
+        ps <- prep @v cfg.cPsFmt bs
+        case cfg.cCmd of
           CCmdPatch'   cfg'  -> cmdPatchBinCompareFwd cfg' ps
           CCmdCompile' _cfg' ->
               let ps' = asPrettyYamlHexMultiPatch convertBackBin ps
                in liftIO $ B.putStr ps'
+      SViaEq SPrefixOf -> do
+        ps <- prep @v cfg.cPsFmt bs
+        case cfg.cCmd of
+          CCmdPatch'   cfg'  -> cmdPatchBinCompareFwd cfg' ps
+          CCmdCompile' _cfg' -> throwError $ ErrorUnimplemented
       _ -> throwError $ ErrorUnimplemented
 
 patchPureBinCompareFwd
-    :: forall v m
+    :: forall v s m
     .  (MonadIO m, Compare v Bytes)
-    => CStream
+    => Stream 'In s
     -> [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
     -> m Bytes
 patchPureBinCompareFwd si ps = do
@@ -207,11 +217,11 @@ cmdPatchBinCompareFwd
     => CCmdPatch
     -> [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
     -> m ()
-cmdPatchBinCompareFwd cfg ps = do
-    bs <- patchPureBinCompareFwd cfg.streamPair.streamIn ps
-    case cfg.streamPair.streamOut of
-      CStreamFile fp -> liftIO $ B.writeFile fp bs
-      CStreamStd     -> case cfg.printBinary of
+cmdPatchBinCompareFwd c ps = do
+    bs <- patchPureBinCompareFwd c.cCmdPatchStreamIn ps
+    case c.cCmdPatchStreamOut of
+      Path' (Path fp) -> liftIO $ B.writeFile fp bs
+      Std      -> case c.cCmdPatchPrintBinary of
         True  -> liftIO $ B.putStr bs
         False -> liftIO $ logWarn $
                      "refusing to print binary to stdout:"
@@ -229,11 +239,9 @@ wrapAlign
     -> Either (Align.Error s) [Patch s rs a]
 wrapAlign f = Simple.align . over (the @"alignedPatches") (concat . map f)
 
-readStream :: MonadIO m => CStream -> m Bytes
-readStream s = liftIO $
-    case s of
-      CStreamStd     -> B.getContents
-      CStreamFile fp -> B.readFile fp
+readStream :: forall s m. MonadIO m => Stream 'In s -> m Bytes
+readStream = liftIO . \case Std             -> B.getContents
+                            Path' (Path fp) -> B.readFile fp
 
 -- Parse and prepare/normalize a binrep-compare patchscript, polymorphic on the
 -- comparison strategy. We can't handle that in here, because you need it when
@@ -245,28 +253,47 @@ prep
      . ( MonadError Error m
        , FromJSON (CompareRep v Text)
        , FromJSON (CompareRep v HexByteString)
-       , FromJSON (CompareRep v (Asm.AsmInstr 'Asm.ArchArmV8ThumbLE))
-       , FromJSON (CompareRep v [Asm.AsmInstr 'Asm.ArchArmV8ThumbLE])
+       , FromJSON (CompareRep v (Asm.AsmInstr 'Asm.ArmV8ThumbLE))
+       , FromJSON (CompareRep v [Asm.AsmInstr 'Asm.ArmV8ThumbLE])
        , Show     (CompareRep v Bytes)
        -- , Traversable (Compare.Meta v)
        , SingI v
        )
-    => CPatchscriptFormat
+    => CPsFmt
     -> Bytes
     -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
-prep cfg bs = case cfg.dataType of
-  CTextPatch    -> throwError ErrorUnimplemented
-  CBinPatch     -> prep' @HexByteString cfg (return . fmap unHexPatch) bs
-  --CTextBinPatch -> throwError ErrorUnimplemented -- prep' @Text          cfg pure bs
-  CTextBinPatch -> prep' @Text @(AsByteString 'C) cfg (error "TODO") bs
-  CAsmBinPatch  -> prep' cfg (processAsm @'Asm.ArchArmV8ThumbLE) bs
-  CAsmsBinPatch -> prep' cfg (processAsms @'Asm.ArchArmV8ThumbLE) bs
+prep c bs = case c.cPsFmtData of
+  CDataBytes -> prep' @HexByteString c (return . fmap unHexPatch) bs
+  CDataTextBin BR.Text.UTF8 BR.ByteString.C ->
+      prep' @Text @(AsByteString 'BR.ByteString.C) c (binTextifyPatches @'BR.Text.UTF8) bs
+  CDataAsm Asm.ArmV8ThumbLE -> prep' c (processAsm @'Asm.ArmV8ThumbLE) bs
+  CDataText -> throwError ErrorUnimplemented
+  cDataX -> throwError $ Error $ "can't yet handle patchscript data type: "<>show cDataX
 
 unHexPatch
     :: Functor (HFunctorList fs)
     => Patch s fs HexByteString
     -> Patch s fs B.ByteString
 unHexPatch = fmap unHex
+
+binTextifyPatches
+    :: forall (enc :: BR.Text.Encoding) (rep :: BR.ByteString.Rep) s fs m
+    .  ( Predicate enc Text, BR.Text.Encode enc, Predicate rep B.ByteString
+       , MonadError Error m, Traversable (HFunctorList fs) )
+    => [Patch s fs Text]
+    -> m [Patch s fs (AsByteString rep)]
+binTextifyPatches = traverse (binTextifyPatch @enc)
+
+binTextifyPatch
+    :: forall (enc :: BR.Text.Encoding) (rep :: BR.ByteString.Rep) s fs m
+    .  ( Predicate enc Text, BR.Text.Encode enc, Predicate rep B.ByteString
+       , MonadError Error m, Traversable (HFunctorList fs) )
+    => Patch s fs Text
+    -> m (Patch s fs (AsByteString rep))
+binTextifyPatch p = liftEither $ do
+    pTextEnc <- liftMapProcessError (Error . show) $ traverse (refine @enc) p
+    pBs <- liftMapProcessError (Error . show) $ traverse (BR.Text.encodeToRep @rep) pTextEnc
+    return pBs
 
 -- Binrep-compare, parsing @a@ and failably converting to @b@, In many cases,
 -- you may want to parse and binrep the same type -- in such cases, use 'pure'.
@@ -278,15 +305,15 @@ prep'
        , Show     (CompareRep v Bytes)
        , MonadError Error m
        )
-    => CPatchscriptFormat
+    => CPsFmt
     -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
     -> Bytes
     -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
-prep' cfg fBin bs = withSomeSing cfg.seek go
+prep' c fBin bs = withSomeSing c.cPsFmtSeek go
   where
     go :: forall (s :: SeekKind). Sing s -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
     go = \case
-      SAbsSeek -> case cfg.align of
+      SAbsSeek -> case c.cPsFmtAlign of
         CAlign ->     processDecode bs
                   >>= processAlign @v (Simple.convertBinAlign @s)
                   >>= fBin
@@ -297,7 +324,7 @@ prep' cfg fBin bs = withSomeSing cfg.seek go
                     >>= fBin
                     >>= processBin @b
                     >>= processLinearize
-      SFwdSeek -> case cfg.align of
+      SFwdSeek -> case c.cPsFmtAlign of
         CAlign ->     processDecode bs
                   >>= processAlign @v (Simple.convertBinAlign @s)
                   >>= fBin
