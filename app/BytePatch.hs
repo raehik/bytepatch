@@ -13,7 +13,7 @@ import GHC.Generics ( Generic )
 import StreamPatch.Patch
 import StreamPatch.HFunctorList ( Flap, HFunctorList )
 import StreamPatch.Patch.Align qualified as Align
-import StreamPatch.Patch.Linearize qualified as Linear
+import StreamPatch.Patch.Linearize.InPlace qualified as Linear
 import StreamPatch.Patch.Binary qualified as Bin
 import StreamPatch.Patch.Compare qualified as Compare
 import StreamPatch.Patch.Compare ( Via(..), SVia(..), SEqualityCheck(..), HashFunc(..), SHashFunc(..), Compare, CompareRep )
@@ -103,16 +103,15 @@ processDecode :: forall a m. (MonadError Error m, FromJSON a) => Bytes -> m a
 processDecode = liftMapProcessError ErrorYaml . Yaml.decodeEither'
 
 processAlign
-    :: forall (v :: Via) a s m r rs ss is
-    .  ( SeekRep s ~ Natural
-       , r ~ Const (Align.Meta s)
+    :: forall (v :: Via) a m r rs ss is
+    .  ( r ~ Const (Align.Meta Natural)
        , rs ~ RDelete r ss
        , RElem r ss (RIndex r ss)
        , RSubset rs ss is
        , MonadError Error m )
-    => (MultiPatch 'RelSeek v a -> [Patch 'RelSeek ss a])
-    -> [Aligned (MultiPatch 'RelSeek v a)]
-    -> m [Patch s rs a]
+    => (MultiPatch Integer v a -> Patch Integer ss a)
+    -> [Aligned (MultiPatch Integer v a)]
+    -> m [Patch Natural rs a]
 processAlign f = liftMapProcessError (ErrorAlign . show) . fmap concat . traverse (wrapAlign f)
 
 processLinearize
@@ -120,9 +119,9 @@ processLinearize
     .  ( Linear.HasLength a
        , Show a, ReifyConstraint Show (Flap a) fs, RMap fs, RecordToList fs
        , MonadError Error m )
-    => [Patch 'AbsSeek fs a]
-    -> m [Patch 'FwdSeek fs a]
-processLinearize = liftMapProcessError (ErrorLinear . show) . Linear.linearize
+    => [Patch Natural fs a]
+    -> m [Patch Natural fs a]
+processLinearize = liftMapProcessError (ErrorLinear . show) . Linear.linearizeInPlace
 
 processAsm
     :: forall (arch :: Asm.Arch) s fs m
@@ -203,7 +202,7 @@ patchPureBinCompareFwd
     :: forall v s m
     .  (MonadIO m, Compare v Bytes)
     => Stream 'In s
-    -> [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
+    -> [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
     -> m Bytes
 patchPureBinCompareFwd si ps = do
     bsIn <- readStream si
@@ -215,7 +214,7 @@ cmdPatchBinCompareFwd
     :: forall v m
     .  (MonadIO m, Compare v Bytes)
     => CCmdPatch
-    -> [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
+    -> [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
     -> m ()
 cmdPatchBinCompareFwd c ps = do
     bs <- patchPureBinCompareFwd c.cCmdPatchStreamIn ps
@@ -228,16 +227,16 @@ cmdPatchBinCompareFwd c ps = do
                   <> " write to a file with --out-file FILE"
                   <> " or use --print-binary flag to override"
 
+-- TODO fix all of this, it got weird with seekrep removal
 wrapAlign
-    :: ( SeekRep s ~ Natural
-       , r ~ Const (Align.Meta s)
+    :: ( r ~ Const (Align.Meta Natural)
        , rs ~ RDelete r ss
        , RElem r ss i
        , RSubset rs ss is )
-    => (MultiPatch 'RelSeek v a -> [Patch 'RelSeek ss a])
-    -> Aligned (MultiPatch 'RelSeek v a)
-    -> Either (Align.Error s) [Patch s rs a]
-wrapAlign f = Simple.align . over (the @"alignedPatches") (concat . map f)
+    => (MultiPatch Integer v a -> Patch Integer ss a)
+    -> Aligned (MultiPatch Integer v a)
+    -> Either (Align.Error Natural) [Patch Natural rs a]
+wrapAlign f = Simple.align . over (the @"alignedPatches") (map f)
 
 readStream :: forall s m. MonadIO m => Stream 'In s -> m Bytes
 readStream = liftIO . \case Std             -> B.getContents
@@ -261,7 +260,7 @@ prep
        )
     => CPsFmt
     -> Bytes
-    -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
+    -> m [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
 prep c bs = case c.cPsFmtData of
   CDataBytes -> prep' @HexByteString c (return . fmap unHexPatch) bs
   CDataTextBin BR.Text.UTF8 BR.ByteString.C ->
@@ -308,39 +307,26 @@ prep'
     => CPsFmt
     -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
     -> Bytes
-    -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
-prep' c fBin bs = withSomeSing c.cPsFmtSeek go
-  where
-    go :: forall (s :: SeekKind). Sing s -> m [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] Bytes]
-    go = \case
-      SAbsSeek -> case c.cPsFmtAlign of
-        CAlign ->     processDecode bs
-                  >>= processAlign @v (Simple.convertBinAlign @s)
+    -> m [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
+prep' c fBin bs =
+    case c.cPsFmtAlign of
+      CAlign ->     processDecode bs
+                >>= processAlign @v Simple.convertBinAlign
+                >>= fBin
+                >>= processBin @b
+                >>= processLinearize
+      CNoAlign ->     processDecode bs
+                  >>= return . map Simple.convertBin
                   >>= fBin
                   >>= processBin @b
                   >>= processLinearize
-        CNoAlign ->     processDecode bs
-                    >>= return . concat . map (Simple.convertBin @s)
-                    >>= fBin
-                    >>= processBin @b
-                    >>= processLinearize
-      SFwdSeek -> case c.cPsFmtAlign of
-        CAlign ->     processDecode bs
-                  >>= processAlign @v (Simple.convertBinAlign @s)
-                  >>= fBin
-                  >>= processBin @b
-        CNoAlign ->     processDecode bs
-                    >>= return . concat . map (Simple.convertBin @s)
-                    >>= fBin
-                    >>= processBin @b
-      SRelSeek -> throwError $ ErrorUnimplemented
 
 asPrettyYamlHexMultiPatch
     :: forall v s a fs
     .  ( ToJSON (CompareRep v (Hex a))
-       , ToJSON (SeekRep s)
        , ToJSON (Hex a)
-       , Functor (Seek s v)
+       , ToJSON s
+       , Functor (MultiPatch s v)
        )
     => (Patch s fs a -> MultiPatch s v a)
     -> [Patch s fs a]

@@ -24,12 +24,12 @@ import StreamPatch.Patch.Compare hiding ( Meta )
 import Optics
 
 data Meta a = Meta
-  { mNullTerminates :: Maybe (SeekRep 'FwdSeek)
+  { mNullTerminates :: Maybe Natural
   -- ^ Stream segment should be null bytes (0x00) only from this index onwards.
   } deriving (Generic, Eq, Show, Functor, Foldable, Traversable)
 
 data MetaPrep = MetaPrep
-  { mpMaxBytes :: Maybe (SeekRep 'FwdSeek)
+  { mpMaxBytes :: Maybe Natural
   -- ^ Maximum bytelength of binrepped data.
   --
   -- Though binrepping is a safe operation, this is a useful sanity check in

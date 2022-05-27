@@ -4,14 +4,15 @@ module StreamPatch.Apply where
 
 import GHC.Generics ( Generic )
 
-import StreamPatch.Stream
 import StreamPatch.Patch
+import StreamPatch.Stream
 import StreamPatch.HFunctorList
 import StreamPatch.Patch.Binary qualified as Bin
 import StreamPatch.Patch.Compare qualified as Compare
 import StreamPatch.Patch.Compare ( Compare(..), compareTo )
-import StreamPatch.Patch.Linearize ( HasLength, getLength )
+import StreamPatch.Patch.Linearize.InPlace ( HasLength, getLength )
 
+import Numeric.Natural
 import Data.Vinyl
 import Data.ByteString qualified as BS
 import Data.ByteString.Builder qualified as BB
@@ -28,7 +29,7 @@ data Error
 
 applyBinCompareFwd
     :: forall m v. (MonadFwdInplaceStream m, Compare v BS.ByteString, Chunk m ~ BS.ByteString)
-    => [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] BS.ByteString]
+    => [Patch Natural '[Compare.Meta v, Bin.Meta] BS.ByteString]
     -> m (Either Error ())
 applyBinCompareFwd = traverseM_ $ \(Patch bs s (HFunctorList (Flap cm :& Flap bm :& RNil))) -> runExceptT $ do
     -- advance to patch location
@@ -63,7 +64,7 @@ applyBinCompareFwd = traverseM_ $ \(Patch bs s (HFunctorList (Flap cm :& Flap bm
 
 runPureBinCompareFwd
     :: (Compare v BS.ByteString)
-    => [Patch 'FwdSeek '[Compare.Meta v, Bin.Meta] BS.ByteString]
+    => [Patch Natural '[Compare.Meta v, Bin.Meta] BS.ByteString]
     -> BS.ByteString
     -> Either Error BL.ByteString
 runPureBinCompareFwd ps bs =
@@ -75,14 +76,14 @@ runPureBinCompareFwd ps bs =
 
 applyFwd
     :: (MonadFwdInplaceStream m, Chunk m ~ a)
-    => [Patch 'FwdSeek '[] a]
+    => [Patch Natural '[] a]
     -> m ()
 applyFwd =
     mapM_ $ \(Patch a s (HFunctorList RNil)) -> advance s >> overwrite a
 
 -- stupid because no monotraversable :< so gotta use String
 runPureFwdList
-    :: [Patch 'FwdSeek '[] [a]]
+    :: [Patch Natural '[] [a]]
     -> [a]
     -> [a]
 runPureFwdList ps start =
@@ -94,7 +95,7 @@ applyFwdCompare
     .  ( MonadFwdInplaceStream m, Chunk m ~ a
        , MonadError Error m
        , Compare v a, HasLength a )
-    => [Patch 'FwdSeek '[Compare.Meta v] a]
+    => [Patch Natural '[Compare.Meta v] a]
     -> m ()
 applyFwdCompare = mapM_ $ \(Patch a s (HFunctorList (Flap cm :& RNil))) -> do
     advance s

@@ -12,13 +12,13 @@ import GHC.Natural
 
 makeUnalignedPatch
     :: [(Integer, a)]
-    -> [Patch 'RelSeek '[Const (Meta 'FwdSeek)] a]
+    -> [Patch Integer '[Const (Meta Natural)] a]
 makeUnalignedPatch = map go
   where go (n, a) = Patch a n $ HFunctorList $ Flap (Const (Meta Nothing)) :& RNil
 
 align'
     :: Integer -> [(Integer, String)]
-    -> Either (Error 'FwdSeek) [Patch 'FwdSeek '[] String]
+    -> Either (Error Natural) [Patch Natural '[] String]
 align' sBase = traverse (align sBase) . makeUnalignedPatch
 
 spec :: Spec

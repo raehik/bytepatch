@@ -17,12 +17,10 @@ instance ( ToJSON (Flap a r), Generic (Rec (Flap a) rs)
          , GToJSON' Encoding Zero (Rep (Rec (Flap a) rs))
          ) => ToJSON (Rec (Flap a) (r ': rs))
 
--- | A heterogeneous list of functors over 'a'. Each type in the list
---   corresponds to a single value.
+-- | A list of functors parametric over a "shared" 'a', where each functor
+--   stores a single value 'f a'.
 --
--- Heterogeneous lists are nice, but sometimes you want one that you can map a
--- functor over. This type gives you that. We use vinyl for the representation:
--- it provides everything we need other than some newtypes to swap types around.
+-- Just a wrapper on top of Vinyl with some types swap around.
 newtype HFunctorList fs a = HFunctorList { getHFunctorList :: Rec (Flap a) fs }
     deriving stock (Generic)
 
