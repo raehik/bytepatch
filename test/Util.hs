@@ -13,12 +13,9 @@ instance Arbitrary Natural where
   arbitrary = arbitrarySizedNatural
   shrink    = shrinkIntegral
 
-makePatch :: a -> Natural -> Patch 'FwdSeek '[] a
-makePatch a n = Patch a n $ HFunctorList RNil
+makePatch :: a -> s -> Patch s '[] a
+makePatch a s = Patch a s $ HFunctorList RNil
 
-makePatch' :: forall s a. a -> SeekRep s -> Patch s '[] a
-makePatch' a n = Patch a n $ HFunctorList RNil
-
-makePatchscript :: [(Natural, a)] -> [Patch 'FwdSeek '[] a]
+makePatchscript :: [(s, a)] -> [Patch s '[] a]
 makePatchscript = map go
   where go (n, a) = makePatch a n

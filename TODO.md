@@ -1,9 +1,35 @@
-## Internals
+## Simplify `Simple`, recommend Dhall
+  * No multipatches. One patch, one seek.
+  * Aligning must stay, Dhall can't do that calculation for us
+  * That's pretty much all I can change lol. Perhaps would let us cut out the
+    `Simple` middleman. But not while the functors in my functor list remain
+    unnamed.
+
+## Extensions
+### CLI
+#### Generic option parser helper
+Should sketch elsewhere. Would be super useful for this. Like parsing
+`text-bin:utf8,c` to `CDataTextBin BR.Text.Encoding BR.ByteString.Rep`, and
+handling inner records like `text-bin:ascii,(pascal:4,le)`. Dunno though.
+
+### Internal
   * Move stream-time binary meta to prep-time. Can't I just extend the compare
     value with the nulls? It would break equality comparisons, but they're silly
     anyway for null-terminated strings. So it'd be a "good" breakage.
     * Also, I should definitely change to "succeeding nulls" rather than "null
       terminates at index". Safer, more obvious
+  * Clean up Vinyl usage. They have Unicode shorthands for common type-level
+    propositions (constraints). e.g. `type (∈) r rs = RElem r rs (RIndex r rs)`
+
+### Usability
+  * default schema options: no align, type=text-bin:utf8:c, compare=eq:prefix
+  * explain relationship between compare, type: some pairings are a bit
+    meaningless
+    * key point: compare data is obtained by checking the length of the patch
+      data, and grabbing the length from the stream stream. thus, changing the
+      length of your patch data changes how the comparison takes 
+    * `compare:hash=FUNC` usually means you're doing doing static byte patches
+    * also needs work on internals
 
 ## aeson instances for `Patch`
 I had great initial success via aeson's & vinyl's generics!! But not enough:

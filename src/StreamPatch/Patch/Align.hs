@@ -1,58 +1,49 @@
 module StreamPatch.Patch.Align where
 
-import           StreamPatch.Patch
-import           StreamPatch.HFunctorList ( hflStrip )
+import StreamPatch.Patch
+import StreamPatch.HFunctorList ( hflStrip )
 
-import           GHC.Generics ( Generic )
-import           Numeric.Natural
-import           GHC.Natural ( naturalFromInteger )
-import           Data.Vinyl
-import           Data.Vinyl.TypeLevel
-import           Data.Functor.Const
+import GHC.Generics ( Generic )
+import Data.Vinyl
+import Data.Vinyl.TypeLevel
+import Data.Functor.Const
 
-data Meta s = Meta
-  { mExpected :: Maybe (SeekRep s)
+data Meta st = Meta
+  { mExpected :: Maybe st
   -- ^ Absolute stream offset for edit. Used for checking against actual offset.
-  } deriving (Generic)
+  } deriving (Generic, Show, Eq)
 
-deriving instance (Eq   (SeekRep s)) => Eq   (Meta s)
-deriving instance (Show (SeekRep s)) => Show (Meta s)
-
-data Error s
-  = ErrorSeekBelow0 (SeekRep 'RelSeek)
-  | ErrorDoesntMatchExpected (SeekRep s) (SeekRep s) -- expected, then actual
-    deriving (Generic)
-
-deriving instance (Eq   (SeekRep s)) => Eq   (Error s)
-deriving instance (Show (SeekRep s)) => Show (Error s)
+data Error st
+  = ErrorAlignedToNegative Integer -- guaranteed negative
+  | ErrorDoesntMatchExpected st st
+    deriving (Generic, Show, Eq)
 
 -- | Attempt to align the given patch to 0 using the given base.
+--
+-- The resulting seek is guaranteed to be non-negative, so you may use
+-- natural-like types safely.
+--
+-- TODO Complicated.
 align
-    :: forall s a ss is r rs
-    .  ( SeekRep s ~ Natural
-       , r ~ Const (Meta s)
+    :: forall sf st a ss is r rs
+    .  ( Integral sf, Num st, Eq st
+       , r ~ Const (Meta st)
        , rs ~ RDelete r ss
        , RElem r ss (RIndex r ss)
        , RSubset rs ss is )
-    => SeekRep 'RelSeek
-    -> Patch 'RelSeek ss a
-    -> Either (Error s) (Patch s rs a)
-align sBase (Patch a s ms) = do
-    s' <- tryAlignSeek
-    let (metadataCheck, ms') = hflStrip (check s' . getConst @(Meta s)) ms
-    metadataCheck
-    return $ Patch a s' ms'
+    => Integer
+    -> Patch sf ss a
+    -> Either (Error st) (Patch st rs a)
+align sBase (Patch a s ms)
+  | s' < 0 = Left $ ErrorAlignedToNegative s'
+  | otherwise =
+      case mExpected m of
+        Nothing        -> Right $ Patch a s'' ms'
+        Just sExpected ->
+          if   sExpected == s''
+          then Right $ Patch a s'' ms'
+          else Left $ ErrorDoesntMatchExpected sExpected s''
   where
-    tryAlignSeek = case tryIntegerToNatural (sBase + s) of
-                     Nothing -> Left $ ErrorSeekBelow0 $ sBase + s
-                     Just n  -> Right n
-    check s' m = case mExpected m of
-                   Nothing        -> Right ()
-                   Just sExpected ->
-                     if   sExpected == s'
-                     then Right ()
-                     else Left $ ErrorDoesntMatchExpected sExpected s'
-
-tryIntegerToNatural :: Integer -> Maybe Natural
-tryIntegerToNatural n | n < 0     = Nothing
-                      | otherwise = Just $ naturalFromInteger n
+    s' = sBase + toInteger s
+    s'' = fromInteger s'
+    (m, ms') = hflStrip getConst ms

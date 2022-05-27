@@ -39,7 +39,10 @@ library
       StreamPatch.Patch.Binary
       StreamPatch.Patch.Compare
       StreamPatch.Patch.Compile
-      StreamPatch.Patch.Linearize
+      StreamPatch.Patch.Linearize.Common
+      StreamPatch.Patch.Linearize.InPlace
+      StreamPatch.Patch.Linearize.Insert
+      StreamPatch.Seek
       StreamPatch.Simple
       StreamPatch.Stream
       StreamPatch.Util

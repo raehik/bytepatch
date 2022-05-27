@@ -30,7 +30,7 @@ spec = do
 -- nah I cba lol just trust me
 --manualPatch :: [Patch 'FwdSeek '[] [a]] -> [a] -> [a]
 
-genPatchList :: Arbitrary a => Natural -> Gen [Patch 'FwdSeek '[] [a]]
+genPatchList :: Arbitrary a => Natural -> Gen [Patch Natural '[] [a]]
 genPatchList = skip []
   where
     skip ps n = do

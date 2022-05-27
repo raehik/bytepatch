@@ -3,7 +3,6 @@ module BytePatch.Config where
 import GHC.Generics ( Generic )
 import Data.Data ( Typeable, Data )
 import StreamPatch.Patch.Compare qualified as Compare
-import StreamPatch.Patch ( SeekKind )
 
 import Binrep.Type.Text qualified as BR.Text
 import Binrep.Type.ByteString qualified as BR.ByteString
@@ -21,7 +20,7 @@ data CPsFmt = CPsFmt
   { cPsFmtData    :: CData
   , cPsFmtAlign   :: CAlign
   , cPsFmtCompare :: Compare.Via
-  , cPsFmtSeek    :: SeekKind
+  , cPsFmtSeek    :: ()
   } deriving stock (Generic, Typeable, Data, Show, Eq)
 
 -- | What the patch data indicates (base and target representation).

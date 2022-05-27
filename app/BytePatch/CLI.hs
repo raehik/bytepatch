@@ -8,7 +8,6 @@ import Raehik.CLI.Stream
 import Options.Applicative
 import Control.Monad.IO.Class
 import StreamPatch.Patch.Compare qualified as Compare
-import StreamPatch.Patch ( SeekKind(..) )
 
 import Binrep.Type.Assembly qualified as BR.Asm
 import Binrep.Type.ByteString qualified as BR.ByteString
@@ -25,7 +24,7 @@ pCPsFmt :: Parser CPsFmt
 pCPsFmt = CPsFmt <$> pCData
                  <*> pCAlign
                  <*> pCCompareVia
-                 <*> pSeekKind
+                 <*> pure ()
 
 pCCmd :: Parser CCmd
 pCCmd = hsubparser $
@@ -41,17 +40,6 @@ pCCmdPatch = CCmdPatch <$> pStreamIn <*> pStreamOut <*> pPrintBinary
 pCCmdCompile :: Parser CCmdCompile
 pCCmdCompile = pure CCmdCompile
 
-pSeekKind :: Parser SeekKind
-pSeekKind = option (maybeReader mapper) $
-       long "seek"
-    <> short 's'
-    <> help "Seek type (abs/fwd/rel)"
-    <> metavar "SEEK_TYPE"
-  where mapper = \case "abs" -> Just AbsSeek
-                       "fwd" -> Just FwdSeek
-                       "rel" -> Just RelSeek
-                       _     -> Nothing
-
 pCData :: Parser CData
 pCData = option (maybeReader mapper) $
        long "type"
@@ -59,8 +47,8 @@ pCData = option (maybeReader mapper) $
     <> help "Patch data meaning (see docs for full help)"
     <> metavar "PATCH_TYPE"
   where mapper = \case "bin"              -> Just CDataBytes
-                       "text-bin,utf8,c"  -> Just $ CDataTextBin BR.Text.UTF8 BR.ByteString.C
-                       "asm,armv8thumble" -> Just $ CDataAsm BR.Asm.ArmV8ThumbLE
+                       "text-bin:utf8,c"  -> Just $ CDataTextBin BR.Text.UTF8 BR.ByteString.C
+                       "asm:armv8thumble" -> Just $ CDataAsm BR.Asm.ArmV8ThumbLE
                        "text-plain"       -> Just CDataText
                        _                  -> Nothing
 
