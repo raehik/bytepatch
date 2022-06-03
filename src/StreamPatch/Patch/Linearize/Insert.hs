@@ -1,7 +1,5 @@
 module StreamPatch.Patch.Linearize.Insert where
 
-import StreamPatch.Patch
-
 import Control.Monad.State
 import Data.List qualified as List
 import StreamPatch.Util ( traverseM )

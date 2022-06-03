@@ -1,9 +1,8 @@
-## Simplify `Simple`, recommend Dhall
-  * No multipatches. One patch, one seek.
-  * Aligning must stay, Dhall can't do that calculation for us
-  * That's pretty much all I can change lol. Perhaps would let us cut out the
-    `Simple` middleman. But not while the functors in my functor list remain
-    unnamed.
+## Make aligning much smaller
+Aligning then linearizing does unnecessary work. If you linearize first, you
+only need to align the first patch. Rejig things to use this: if we're
+linearizing, do it first. Still need to check all the expected align values
+though lol.
 
 ## Extensions
 ### CLI

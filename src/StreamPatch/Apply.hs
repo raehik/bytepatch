@@ -12,7 +12,6 @@ import StreamPatch.Patch.Compare qualified as Compare
 import StreamPatch.Patch.Compare ( Compare(..), compareTo )
 import StreamPatch.Patch.Linearize.InPlace ( HasLength, getLength )
 
-import Numeric.Natural
 import Data.Vinyl
 import Data.ByteString qualified as BS
 import Data.ByteString.Builder qualified as BB
@@ -28,15 +27,17 @@ data Error
     deriving (Generic, Eq, Show)
 
 applyBinCompareFwd
-    :: forall m v. (MonadFwdInplaceStream m, Compare v BS.ByteString, Chunk m ~ BS.ByteString)
-    => [Patch Natural '[Compare.Meta v, Bin.Meta] BS.ByteString]
+    :: forall v m
+    .  ( FwdInplaceStream m, Chunk m ~ BS.ByteString
+       , Compare v BS.ByteString, Num (Index m) )
+    => [Patch (Index m) '[Compare.Meta v, Bin.Meta] BS.ByteString]
     -> m (Either Error ())
 applyBinCompareFwd = traverseM_ $ \(Patch bs s (HFunctorList (Flap cm :& Flap bm :& RNil))) -> runExceptT $ do
     -- advance to patch location
     lift $ advance s
 
     -- read same number of bytes as patch data
-    bsStream  <- lift $ readahead $ getLength bs
+    bsStream  <- lift $ readahead $ fromIntegral $ getLength bs
 
     -- check for & strip expected terminating nulls
     bsStream' <- doNullTermCheck bsStream (Bin.mNullTerminates bm)
@@ -64,42 +65,35 @@ applyBinCompareFwd = traverseM_ $ \(Patch bs s (HFunctorList (Flap cm :& Flap bm
 
 runPureBinCompareFwd
     :: (Compare v BS.ByteString)
-    => [Patch Natural '[Compare.Meta v, Bin.Meta] BS.ByteString]
+    => [Patch Int '[Compare.Meta v, Bin.Meta] BS.ByteString]
     -> BS.ByteString
     -> Either Error BL.ByteString
 runPureBinCompareFwd ps bs =
-    let (mErr, (bsRemaining, bbPatched)) = runState (applyBinCompareFwd ps) (bs, mempty)
+    let initState = (bs, mempty :: BB.Builder, 0 :: Int)
+        (mErr, (bsRemaining, bbPatched, _)) = runState (applyBinCompareFwd ps) initState
         bbPatched' = bbPatched <> BB.byteString bsRemaining
      in case mErr of
           Left  e  -> Left e
           Right () -> Right $ BB.toLazyByteString bbPatched'
 
 applyFwd
-    :: (MonadFwdInplaceStream m, Chunk m ~ a)
-    => [Patch Natural '[] a]
+    :: (FwdInplaceStream m, Chunk m ~ a, Integral n)
+    => [Patch (Index m) '[] a]
     -> m ()
 applyFwd =
-    mapM_ $ \(Patch a s (HFunctorList RNil)) -> advance s >> overwrite a
-
--- stupid because no monotraversable :< so gotta use String
-runPureFwdList
-    :: [Patch Natural '[] [a]]
-    -> [a]
-    -> [a]
-runPureFwdList ps start =
-    let ((), (remaining, patched)) = runState (applyFwd ps) (start, mempty)
-     in patched <> remaining
+    mapM_ $ \(Patch a s (HFunctorList RNil)) ->
+        advance s >> overwrite a
 
 applyFwdCompare
     :: forall v a m
-    .  ( MonadFwdInplaceStream m, Chunk m ~ a
+    .  ( FwdInplaceStream m, Chunk m ~ a
        , MonadError Error m
-       , Compare v a, HasLength a )
-    => [Patch Natural '[Compare.Meta v] a]
+       , Compare v a, HasLength a, Num (Index m) )
+    => [Patch (Index m) '[Compare.Meta v] a]
     -> m ()
 applyFwdCompare = mapM_ $ \(Patch a s (HFunctorList (Flap cm :& RNil))) -> do
     advance s
-    aStream <- readahead $ getLength a
+    aStream <- readahead $ fromIntegral $ getLength a
     case Compare.mCompare cm of
       Nothing   -> return ()
       Just aCmp -> case compareTo @v aCmp aStream of
