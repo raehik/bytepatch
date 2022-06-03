@@ -34,7 +34,6 @@ import Binrep.Type.ByteString ( AsByteString )
 import Refined
 
 import qualified System.Exit as System
-import Numeric.Natural
 import Data.Vinyl
 import Data.Vinyl.TypeLevel
 import Data.Functor.Const
@@ -104,14 +103,14 @@ processDecode = liftMapProcessError ErrorYaml . Yaml.decodeEither'
 
 processAlign
     :: forall (v :: Via) a m r rs ss is
-    .  ( r ~ Const (Align.Meta Natural)
+    .  ( r ~ Const (Align.Meta Int)
        , rs ~ RDelete r ss
        , RElem r ss (RIndex r ss)
        , RSubset rs ss is
        , MonadError Error m )
     => (MultiPatch Integer v a -> Patch Integer ss a)
     -> [Aligned (MultiPatch Integer v a)]
-    -> m [Patch Natural rs a]
+    -> m [Patch Int rs a]
 processAlign f = liftMapProcessError (ErrorAlign . show) . fmap concat . traverse (wrapAlign f)
 
 processLinearize
@@ -119,8 +118,8 @@ processLinearize
     .  ( Linear.HasLength a
        , Show a, ReifyConstraint Show (Flap a) fs, RMap fs, RecordToList fs
        , MonadError Error m )
-    => [Patch Natural fs a]
-    -> m [Patch Natural fs a]
+    => [Patch Linear.Len fs a]
+    -> m [Patch Linear.Len fs a]
 processLinearize = liftMapProcessError (ErrorLinear . show) . Linear.linearizeInPlace
 
 processAsm
@@ -202,7 +201,7 @@ patchPureBinCompareFwd
     :: forall v s m
     .  (MonadIO m, Compare v Bytes)
     => Stream 'In s
-    -> [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
+    -> [Patch Int '[Compare.Meta v, Bin.Meta] Bytes]
     -> m Bytes
 patchPureBinCompareFwd si ps = do
     bsIn <- readStream si
@@ -214,7 +213,7 @@ cmdPatchBinCompareFwd
     :: forall v m
     .  (MonadIO m, Compare v Bytes)
     => CCmdPatch
-    -> [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
+    -> [Patch Int '[Compare.Meta v, Bin.Meta] Bytes]
     -> m ()
 cmdPatchBinCompareFwd c ps = do
     bs <- patchPureBinCompareFwd c.cCmdPatchStreamIn ps
@@ -229,13 +228,13 @@ cmdPatchBinCompareFwd c ps = do
 
 -- TODO fix all of this, it got weird with seekrep removal
 wrapAlign
-    :: ( r ~ Const (Align.Meta Natural)
+    :: ( r ~ Const (Align.Meta Int)
        , rs ~ RDelete r ss
        , RElem r ss i
        , RSubset rs ss is )
     => (MultiPatch Integer v a -> Patch Integer ss a)
     -> Aligned (MultiPatch Integer v a)
-    -> Either (Align.Error Natural) [Patch Natural rs a]
+    -> Either (Align.Error Int) [Patch Int rs a]
 wrapAlign f = Simple.align . over (the @"alignedPatches") (map f)
 
 readStream :: forall s m. MonadIO m => Stream 'In s -> m Bytes
@@ -260,7 +259,7 @@ prep
        )
     => CPsFmt
     -> Bytes
-    -> m [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
+    -> m [Patch Int '[Compare.Meta v, Bin.Meta] Bytes]
 prep c bs = case c.cPsFmtData of
   CDataBytes -> prep' @HexByteString c (return . fmap unHexPatch) bs
   CDataTextBin BR.Text.UTF8 BR.ByteString.C ->
@@ -307,7 +306,7 @@ prep'
     => CPsFmt
     -> (forall s fs. Traversable (HFunctorList fs) => [Patch s fs a] -> m [Patch s fs b])
     -> Bytes
-    -> m [Patch Natural '[Compare.Meta v, Bin.Meta] Bytes]
+    -> m [Patch Int '[Compare.Meta v, Bin.Meta] Bytes]
 prep' c fBin bs =
     case c.cPsFmtAlign of
       CAlign ->     processDecode bs

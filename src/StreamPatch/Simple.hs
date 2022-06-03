@@ -25,7 +25,7 @@ data MultiPatch s (v :: Via) a = MultiPatch
   , mpCompare        :: Maybe (CompareRep v a)
   , mpNullTerminates :: Maybe Natural
   , mpMaxBytes       :: Maybe Natural -- TODO confirm meaning, maybe improve name
-  , mpAligned        :: Maybe Natural
+  , mpAligned        :: Maybe Integer
   } deriving (Generic)
 
 instance Functor (MultiPatch s ('ViaEq ec)) where
@@ -72,7 +72,7 @@ convert f p = Patch { patchData = mpData p
 convertBinAlign
     :: forall a v
     .  MultiPatch Integer v a
-    -> Patch Integer '[Const (Align.Meta Natural), Const Bin.MetaPrep, Compare.Meta v, Bin.Meta] a
+    -> Patch Integer '[Const (Align.Meta Int), Const Bin.MetaPrep, Compare.Meta v, Bin.Meta] a
 convertBinAlign = convert go
   where go p = cmAlign p <+> cmBinPrep p <+> cmCompare p <+> cmBin p
 
@@ -86,7 +86,7 @@ convertBin p = convert go p
 convertAlign
     :: forall a v
     .  MultiPatch Integer v a
-    -> Patch Integer '[Const (Align.Meta Natural)] a
+    -> Patch Integer '[Const (Align.Meta Int)] a
 convertAlign p = convert cmAlign p
 
 convertEmpty
@@ -98,13 +98,14 @@ convertEmpty p = convert (const RNil) p
 --------------------------------------------------------------------------------
 
 align
-    :: forall a ss rs is i r
-    .  ( r ~ Const (Align.Meta Natural)
+    :: forall st a ss rs is i r
+    .  ( r ~ Const (Align.Meta st)
+       , Num st, Eq st
        , rs ~ RDelete r ss
        , RElem r ss i
        , RSubset rs ss is )
     => Aligned (Patch Integer ss a)
-    -> Either (Align.Error Natural) [Patch Natural rs a]
+    -> Either (Align.Error st) [Patch st rs a]
 align (Aligned a ps) = traverse (Align.align a) ps
 
 --------------------------------------------------------------------------------
@@ -118,8 +119,8 @@ cmCompare p = cm $ Compare.Meta { Compare.mCompare = mpCompare p }
 cmBinPrep :: MultiPatch s c a -> Rec (Flap a) '[Const Bin.MetaPrep]
 cmBinPrep p = cm $ Const $ Bin.MetaPrep { Bin.mpMaxBytes = mpMaxBytes p }
 
-cmAlign :: MultiPatch Integer c a -> Rec (Flap a) '[Const (Align.Meta Natural)]
-cmAlign p = cm $ Const $ Align.Meta { Align.mExpected = mpAligned p }
+cmAlign :: MultiPatch Integer c a -> Rec (Flap a) '[Const (Align.Meta Int)]
+cmAlign p = cm $ Const $ Align.Meta { Align.mExpected = fromInteger <$> mpAligned p }
 
 cm :: f a -> Rec (Flap a) '[f]
 cm fa = Flap fa :& RNil
