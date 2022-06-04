@@ -18,6 +18,7 @@ import Data.ByteString.Builder qualified as BB
 import Control.Monad.State
 import Control.Monad.Reader
 import System.IO qualified as IO
+import Data.List qualified as List
 
 -- | Streams supporting forward seeking and in-place edits (length never
 --   changes).
@@ -85,6 +86,26 @@ instance MonadIO m => FwdInplaceStream (ReaderT IO.Handle m) where
         hdl <- ask
         pos <- liftIO $ IO.hTell hdl
         return $ fromInteger pos
+
+-- TODO Need MonoTraversable to define for Text, ByteString etc easily. Bleh. I
+-- think Snoyman's advice is to reimplement. Also bleh.
+instance Monad m => FwdInplaceStream (StateT ([a], [a], Int) m) where
+    type Chunk (StateT ([a], [a], Int) m) = [a]
+    type Index (StateT ([a], [a], Int) m) = Int
+    readahead n = get >>= \(src, _, _) -> return $ List.take n src
+    overwrite bs = do
+        (src, out, pos) <- get
+        let (_, src') = List.splitAt (List.length bs) src
+            out' = out <> bs
+            pos' = pos + List.length bs
+        put (src', out', pos')
+    advance n = do
+        (src, out, pos) <- get
+        let (bs, src') = List.splitAt (fromIntegral n) src
+            out' = out <> bs
+            pos' = pos + n
+        put (src', out', pos')
+    getCursor = get >>= \(_, _, pos) -> return pos
 
 -- | Streams supporting forward seeking and arbitrary edits.
 class FwdInplaceStream m => FwdStream m where
