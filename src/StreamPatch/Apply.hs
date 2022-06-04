@@ -77,39 +77,45 @@ runPureBinCompareFwd ps bs =
           Right () -> Right $ BB.toLazyByteString bbPatched'
 
 applyFwd
-    :: (FwdInplaceStream m, Chunk m ~ a, Integral n)
+    :: (FwdInplaceStream m, Chunk m ~ a)
     => [Patch (Index m) '[] a]
     -> m ()
 applyFwd =
     mapM_ $ \(Patch a s (HFunctorList RNil)) ->
         advance s >> overwrite a
 
+runPureFwdList
+    :: [Patch Int '[] [a]]
+    -> [a]
+    -> [a]
+runPureFwdList ps start =
+    let ((), (remaining, patched, _)) = runState (applyFwd ps) (start, mempty, 0 :: Int)
+     in patched <> remaining
+
 applyFwdCompare
-    :: forall v a m
+    :: forall a v m
     .  ( FwdInplaceStream m, Chunk m ~ a
-       , MonadError Error m
        , Compare v a, HasLength a, Num (Index m) )
     => [Patch (Index m) '[Compare.Meta v] a]
-    -> m ()
-applyFwdCompare = mapM_ $ \(Patch a s (HFunctorList (Flap cm :& RNil))) -> do
+    -> m (Either Error ())
+applyFwdCompare = traverseM_ $ \(Patch a s (HFunctorList (Flap cm :& RNil))) -> do
     advance s
     aStream <- readahead $ fromIntegral $ getLength a
     case Compare.mCompare cm of
-      Nothing   -> return ()
+      Nothing   -> do
+        x <- overwrite a
+        return $ Right x
       Just aCmp -> case compareTo @v aCmp aStream of
-                     Nothing -> return ()
-                     Just e  -> throwError $ ErrorCompare e
-    overwrite a
+                     Nothing -> return $ Right ()
+                     Just e  -> return $ Left $ ErrorCompare e
 
-{-
--- stupid because no monotraversable :<
-runPureFwdCompareList
-    :: Compare v [a]
-    => [Patch 'FwdSeek '[Compare.Meta v] [a]]
-    -> [a]
-    -> Either Error [a]
-runPureFwdCompareList ps start =
-    -- also got to runExceptT
-    let ((), (remaining, patched)) = runState (applyFwdCompare ps) (start, mempty)
-     in patched <> remaining
--}
+runPureFwdCompareString
+    :: Compare v String
+    => [Patch Int '[Compare.Meta v] String]
+    -> String
+    -> Either Error String
+runPureFwdCompareString ps start =
+    let (r, (remaining, patched, _)) = runState (applyFwdCompare ps) (start, "", 0 :: Int)
+    in  case r of
+          Left err -> Left err
+          Right () -> Right $ patched <> remaining
