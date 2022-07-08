@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 module StreamPatch.Patch.Linearize.InPlace where
 
 import StreamPatch.Patch

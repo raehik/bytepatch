@@ -3,7 +3,8 @@
   * Rename Compare (but not sure what to...)
 -}
 
-{-# LANGUAGE AllowAmbiguousTypes, OverloadedStrings #-}
+{-# LANGUAGE AllowAmbiguousTypes, UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module StreamPatch.Patch.Compare where

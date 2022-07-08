@@ -1,4 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE AllowAmbiguousTypes, UndecidableInstances #-}
 
 module StreamPatch.HFunctorList where
 

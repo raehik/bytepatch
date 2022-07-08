@@ -41,7 +41,7 @@ data MetaPrep = MetaPrep
   } deriving (Eq, Show, Generic)
 
 data Error a
-  = ErrorBinRepOverlong Natural Natural a (Maybe BS.ByteString)
+  = ErrorBinRepOverlong BLenT BLenT a (Maybe BS.ByteString)
   -- ^ If the value was serialized, it's given in the 'Maybe'.
     deriving (Eq, Show, Generic, Functor, Foldable, Traversable)
 
@@ -71,9 +71,10 @@ binRepify (Patch a s ms) = do
         case mpMaxBytes m of
           Nothing       -> return ()
           Just maxBytes ->
-            if   blen a > maxBytes
-            then Left $ ErrorBinRepOverlong (blen a) maxBytes a Nothing
-            else return ()
+            let maxBytes' = natToBLen maxBytes
+             in if   blen a > maxBytes'
+                then Left $ ErrorBinRepOverlong (blen a) maxBytes' a Nothing
+                else return ()
 
 -- | Treat the nulls field as a "this is how many extra nulls there are", and
 --   amend the compare meta for a patch by appending those nulls, and strip that

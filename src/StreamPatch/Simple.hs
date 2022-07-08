@@ -1,5 +1,6 @@
 -- | TODO remove ASAP. figure out Aeson with Vinyl
 
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 

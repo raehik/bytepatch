@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 {- | Core patch type: patches, seeks, metadata container.
 
 This library is based around patches to streams i.e. containers indexed by the
