@@ -44,6 +44,22 @@ jobs:
             touch -d $(git log --pretty=format:%cI -1 "$rev" -- "$f") "$f";
         done
 
+    - name: Manually build & install keystone-engine library
+      run: |-
+        pushd ..
+        git clone https://github.com/keystone-engine/keystone
+        pushd keystone
+        mkdir build
+        pushd build
+        ../make-share.sh
+        sudo make install
+        popd
+        popd
+        popd
+
+    - name: Fix dynamic lib searching weirdness
+      run: sudo ldconfig
+
     - name: Delete preinstalled docs-stripped GHC ${{ env.ghc }}
       run: rm -rf $HOME/.ghcup/ghc/${{ env.ghc }}
 
