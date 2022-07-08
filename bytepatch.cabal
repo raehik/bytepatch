@@ -6,7 +6,7 @@ cabal-version: 1.12
 
 name:           bytepatch
 version:        0.4.0
-synopsis:       Patch byte-representable data in a bytestream.
+synopsis:       Patch byte-representable data in a bytestream
 description:    Please see README.md.
 category:       CLI
 homepage:       https://github.com/raehik/bytepatch#readme
@@ -17,7 +17,7 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 tested-with:
-    GHC == 8.10.7, GHC == 9.0.1
+    GHC ==9.2.3
 extra-source-files:
     README.md
     CHANGELOG.md
@@ -53,13 +53,12 @@ library
       src
   default-extensions:
       EmptyCase
-      FlexibleContexts
-      FlexibleInstances
-      InstanceSigs
-      MultiParamTypeClasses
-      PolyKinds
       LambdaCase
+      InstanceSigs
+      BangPatterns
+      ExplicitNamespaces
       DerivingStrategies
+      DerivingVia
       StandaloneDeriving
       DeriveAnyClass
       DeriveGeneric
@@ -68,21 +67,22 @@ library
       DeriveFoldable
       DeriveTraversable
       DeriveLift
+      FlexibleContexts
+      FlexibleInstances
+      MultiParamTypeClasses
+      GADTs
+      PolyKinds
+      RoleAnnotations
+      RankNTypes
+      TypeApplications
+      DefaultSignatures
+      TypeFamilies
+      DataKinds
+      MagicHash
       ImportQualifiedPost
       StandaloneKindSignatures
-      DerivingVia
-      RoleAnnotations
-      TypeApplications
-      DataKinds
-      TypeFamilies
-      TypeOperators
-      BangPatterns
-      GADTs
-      DefaultSignatures
-      RankNTypes
-      UndecidableInstances
-      MagicHash
       ScopedTypeVariables
+      TypeOperators
   ghc-options: -Wall
   build-depends:
       aeson >=2.0.2.0 && <2.1
@@ -92,7 +92,7 @@ library
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
-    , keystone >=0.1.1.0 && <0.2
+    , heystone >=0.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
     , memory ==0.17.*
     , mtl >=2.2.2 && <2.3
@@ -117,13 +117,12 @@ executable bytepatch
       app
   default-extensions:
       EmptyCase
-      FlexibleContexts
-      FlexibleInstances
-      InstanceSigs
-      MultiParamTypeClasses
-      PolyKinds
       LambdaCase
+      InstanceSigs
+      BangPatterns
+      ExplicitNamespaces
       DerivingStrategies
+      DerivingVia
       StandaloneDeriving
       DeriveAnyClass
       DeriveGeneric
@@ -132,21 +131,22 @@ executable bytepatch
       DeriveFoldable
       DeriveTraversable
       DeriveLift
+      FlexibleContexts
+      FlexibleInstances
+      MultiParamTypeClasses
+      GADTs
+      PolyKinds
+      RoleAnnotations
+      RankNTypes
+      TypeApplications
+      DefaultSignatures
+      TypeFamilies
+      DataKinds
+      MagicHash
       ImportQualifiedPost
       StandaloneKindSignatures
-      DerivingVia
-      RoleAnnotations
-      TypeApplications
-      DataKinds
-      TypeFamilies
-      TypeOperators
-      BangPatterns
-      GADTs
-      DefaultSignatures
-      RankNTypes
-      UndecidableInstances
-      MagicHash
       ScopedTypeVariables
+      TypeOperators
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson >=2.0.2.0 && <2.1
@@ -157,13 +157,13 @@ executable bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
-    , keystone >=0.1.1.0 && <0.2
+    , heystone >=0.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
     , memory ==0.17.*
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , optparse-applicative ==0.17.*
-    , refined >=0.6.3 && <0.7
+    , refined ==0.7.*
     , singletons ==3.0.*
     , singletons-base ==3.1.*
     , singletons-th ==3.1.*
@@ -186,13 +186,12 @@ test-suite spec
       test
   default-extensions:
       EmptyCase
-      FlexibleContexts
-      FlexibleInstances
-      InstanceSigs
-      MultiParamTypeClasses
-      PolyKinds
       LambdaCase
+      InstanceSigs
+      BangPatterns
+      ExplicitNamespaces
       DerivingStrategies
+      DerivingVia
       StandaloneDeriving
       DeriveAnyClass
       DeriveGeneric
@@ -201,21 +200,23 @@ test-suite spec
       DeriveFoldable
       DeriveTraversable
       DeriveLift
+      FlexibleContexts
+      FlexibleInstances
+      MultiParamTypeClasses
+      GADTs
+      PolyKinds
+      RoleAnnotations
+      RankNTypes
+      TypeApplications
+      DefaultSignatures
+      TypeFamilies
+      DataKinds
+      MagicHash
       ImportQualifiedPost
       StandaloneKindSignatures
-      DerivingVia
-      RoleAnnotations
-      TypeApplications
-      DataKinds
-      TypeFamilies
-      TypeOperators
-      BangPatterns
-      GADTs
-      DefaultSignatures
-      RankNTypes
-      UndecidableInstances
-      MagicHash
       ScopedTypeVariables
+      TypeOperators
+  ghc-options: -Wall
   build-tool-depends:
       hspec-discover:hspec-discover >=2.7 && <2.10
   build-depends:
@@ -228,8 +229,8 @@ test-suite spec
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
+    , heystone >=0.1.0 && <0.2
     , hspec >=2.7 && <2.10
-    , keystone >=0.1.1.0 && <0.2
     , megaparsec >=9.0 && <9.3
     , memory ==0.17.*
     , mtl >=2.2.2 && <2.3

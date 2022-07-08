@@ -4,7 +4,7 @@ module Binrep.Type.Assembly.Assemble where
 
 import Binrep.Type.Assembly
 
-import Keystone qualified
+import Heystone qualified as Keystone
 import System.IO.Unsafe ( unsafeDupablePerformIO )
 import Control.Monad.IO.Class
 import Data.ByteString qualified as BS

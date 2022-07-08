@@ -4,6 +4,18 @@ only need to align the first patch. Rejig things to use this: if we're
 linearizing, do it first. Still need to check all the expected align values
 though lol.
 
+## Simplify HFunctorList stuff
+Can't I just give in and go to a regular heterogeneous list? Simplifies a lot.
+Means I give up the `Functor` instance. But I'm really only using it for
+`Compare`. It's feels nice to thread the type variable through, but it's not
+perfect, because we can't do the "expected" thing per layer (because things
+don't compose that way).
+
+I don't know how I feel about this either way.
+
+## Compare code is real shit
+Needs redesign.
+
 ## Extensions
 ### CLI
 #### Generic option parser helper
