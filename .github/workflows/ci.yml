@@ -151,21 +151,35 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: ${{ matrix.cabal }}
 
+    - name: Cache global Cabal store
+      uses: actions/cache@v2
+      with:
+        path: ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
+        key:  test-cabal-global-store-${{ runner.os }}-ghc_${{ matrix.ghc }}
+
     - name: Prepare icu4c for developer usage (expose to pkg-config)
       run: echo "PKG_CONFIG_PATH=/usr/local/opt/icu4c/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
-    - run: brew install keystone
+    - name: Manually build & install keystone-engine library
+      run: |-
+        pushd ..
+        git clone https://github.com/keystone-engine/keystone
+        pushd keystone
+        mkdir build
+        pushd build
+        ../make-share.sh
+        sudo make install
+        popd
+        popd
+        popd
 
     - run: cabal freeze
 
-    - name: Cache Cabal build artifacts
+    - name: (bytepatch) Cache project Cabal store
       uses: actions/cache@v2
       with:
-        path: |
-          ${{ steps.setup-haskell-build-env.outputs.cabal-store }}
-          dist-newstyle
-        key:          test-cabal-build-artifacts-${{ runner.os }}-ghc_${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-        restore-keys: test-cabal-build-artifacts-${{ runner.os }}-ghc_${{ matrix.ghc }}
+        path: dist-newstyle
+        key:  test-cabal-project-bytepatch-${{ runner.os }}-ghc_${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
     - name: Build (exe)
       if: "env.exe != 0 && matrix.build == 'release'"
@@ -295,4 +309,23 @@ jobs:
       with:
         path: C:/cabal/bin/bytepatch.exe
         name: bytepatch-${{ runner.os }}-ghc_${{ matrix.ghc }}-cabal-${{ github.sha }}
+        if-no-files-found: error
+
+    # We copy the built executable plus its runtime dependencies into a
+    # directory. For dynamically linked libraries, we inspect the file and copy
+    # only the libraries managed by MSYS2. The rest are assumed to be Windows
+    # system libraries that all users should have.
+    - name: (bytepatch) Prepare self-contained bundle
+      shell: msys2 {0}
+      run: |
+        mkdir bundle
+        cp C:/cabal/bin/"${{ env.exe }}".exe bundle
+        ldd bundle/"${{ env.exe }}".exe | cut --delimiter=' ' --fields=3 - | grep '^'$MINGW_PREFIX/bin/lib.*'\'.dll | xargs -I '{}' cp '{}' bundle
+        mv bundle "${{ env.exe }}-bundle-windows-msys2-${{ matrix.msystem }}-ghc-${{ matrix.ghc }}-cabal-${{ github.sha }}"
+
+    - name: Upload self-contained bundle
+      uses: actions/upload-artifact@v2
+      with:
+        path: "${{ env.exe }}-bundle-windows-msys2-${{ matrix.msystem }}-ghc-${{ matrix.ghc }}-cabal-${{ github.sha }}"
+        name: "${{ env.exe }}-bundle-windows-msys2-${{ matrix.msystem }}-ghc-${{ matrix.ghc }}-cabal-${{ github.sha }}"
         if-no-files-found: error
