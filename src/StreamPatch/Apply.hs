@@ -50,17 +50,17 @@ applyBinCompareFwd = traverseM_ $ \(Patch bs s (HFunctorList (Flap cm :& Flap bm
   where
     err = throwError
     doCompare bs' = \case
-      Nothing   -> return ()
+      Nothing   -> pure ()
       Just cmp -> do
         case compareTo @v cmp bs' of
-          Nothing -> return ()
+          Nothing -> pure ()
           Just e -> err $ ErrorCompare e
     doNullTermCheck bs' = \case
-      Nothing -> return bs'
+      Nothing -> pure bs'
       Just nt ->
         let (bs'', bsNulls) = BS.splitAt (fromIntegral nt) bs'
          in if   bsNulls == BS.replicate (BS.length bsNulls) 0x00
-            then return bs''
+            then pure bs''
             else err $ ErrorBinUnexpectedNonNull bs'
 
 runPureBinCompareFwd
@@ -104,10 +104,10 @@ applyFwdCompare = traverseM_ $ \(Patch a s (HFunctorList (Flap cm :& RNil))) -> 
     case Compare.mCompare cm of
       Nothing   -> do
         x <- overwrite a
-        return $ Right x
+        pure $ Right x
       Just aCmp -> case compareTo @v aCmp aStream of
-                     Nothing -> return $ Right ()
-                     Just e  -> return $ Left $ ErrorCompare e
+                     Nothing -> pure $ Right ()
+                     Just e  -> pure $ Left $ ErrorCompare e
 
 runPureFwdCompareString
     :: Compare v String

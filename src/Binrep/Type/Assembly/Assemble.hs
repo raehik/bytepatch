@@ -64,5 +64,5 @@ assemble' arch modes instrs = do
         -- x>1 weird error, if x<1 check errno->strerror
         liftIO (Keystone.runAssembler out') >>= \case
           Left e -> err $ "error while assembling: "<>show e
-          Right (mc, _count) -> return $ Right mc
-  where err = return . Left
+          Right (mc, _count) -> pure $ Right mc
+  where err = pure . Left

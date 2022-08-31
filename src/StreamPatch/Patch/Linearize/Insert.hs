@@ -34,8 +34,8 @@ linearize f g as =
         a' <- get
         let s' = fromIntegral $ f a - f a'
         if s' == 0
-        then return $ Left (a, a')
-        else put a >> return (Right (g s' a))
+        then pure $ Left (a, a')
+        else put a >> pure (Right (g s' a))
 
 linearize' :: (Integral sf, Integral st) => [sf] -> Either (sf, sf) (Maybe (sf, [st]))
 linearize' = linearize id const

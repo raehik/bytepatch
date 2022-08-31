@@ -53,7 +53,7 @@ class Monad m => FwdInplaceStream m where
 instance Monad m => FwdInplaceStream (StateT (B.ByteString, BB.Builder, Int) m) where
     type Chunk (StateT (B.ByteString, BB.Builder, Int) m) = B.ByteString
     type Index (StateT (B.ByteString, BB.Builder, Int) m) = Int
-    readahead n = get >>= \(src, _, _) -> return $ B.take n src
+    readahead n = get >>= \(src, _, _) -> pure $ B.take n src
     overwrite bs = do
         (src, out, pos) <- get
         let (_, src') = B.splitAt (B.length bs) src
@@ -66,7 +66,7 @@ instance Monad m => FwdInplaceStream (StateT (B.ByteString, BB.Builder, Int) m) 
             out' = out <> BB.byteString bs
             pos' = pos + n
         put (src', out', pos')
-    getCursor = get >>= \(_, _, pos) -> return pos
+    getCursor = get >>= \(_, _, pos) -> pure pos
 
 instance MonadIO m => FwdInplaceStream (ReaderT IO.Handle m) where
     type Chunk (ReaderT IO.Handle m) = B.ByteString
@@ -85,14 +85,14 @@ instance MonadIO m => FwdInplaceStream (ReaderT IO.Handle m) where
     getCursor = do
         hdl <- ask
         pos <- liftIO $ IO.hTell hdl
-        return $ fromInteger pos
+        pure $ fromInteger pos
 
 -- TODO Need MonoTraversable to define for Text, ByteString etc easily. Bleh. I
 -- think Snoyman's advice is to reimplement. Also bleh.
 instance Monad m => FwdInplaceStream (StateT ([a], [a], Int) m) where
     type Chunk (StateT ([a], [a], Int) m) = [a]
     type Index (StateT ([a], [a], Int) m) = Int
-    readahead n = get >>= \(src, _, _) -> return $ List.take n src
+    readahead n = get >>= \(src, _, _) -> pure $ List.take n src
     overwrite bs = do
         (src, out, pos) <- get
         let (_, src') = List.splitAt (List.length bs) src
@@ -105,7 +105,7 @@ instance Monad m => FwdInplaceStream (StateT ([a], [a], Int) m) where
             out' = out <> bs
             pos' = pos + n
         put (src', out', pos')
-    getCursor = get >>= \(_, _, pos) -> return pos
+    getCursor = get >>= \(_, _, pos) -> pure pos
 
 -- | Streams supporting forward seeking and arbitrary edits.
 class FwdInplaceStream m => FwdStream m where

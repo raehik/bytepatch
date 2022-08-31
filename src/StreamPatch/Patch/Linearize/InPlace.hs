@@ -50,9 +50,9 @@ linearizeInPlace ps = evalState (traverseM go (List.sortBy comparePatchSeeks ps)
         let skip = s - cursor
         if skip < 0 then do
             -- next absolute seek is before cursor: current patch overlaps prev
-            return $ Left $ ErrorOverlap cursor p pPrev
+            pure $ Left $ ErrorOverlap cursor p pPrev
         else do
             let cursor' = cursor + skip + getLength a
                 p' = p { patchSeek = skip }
             put (cursor', p)
-            return $ Right p'
+            pure $ Right p'

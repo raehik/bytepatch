@@ -65,16 +65,16 @@ binRepify (Patch a s ms) = do
     checkMeta m
     let bs = runPut a
         bsms = fmap runPut ms'
-    return $ Patch bs s bsms
+    pure $ Patch bs s bsms
   where
     checkMeta m =
         case mpMaxBytes m of
-          Nothing       -> return ()
+          Nothing       -> pure ()
           Just maxBytes ->
             let maxBytes' = natToBLen maxBytes
              in if   blen a > maxBytes'
                 then Left $ ErrorBinRepOverlong (blen a) maxBytes' a Nothing
-                else return ()
+                else pure ()
 
 -- | Treat the nulls field as a "this is how many extra nulls there are", and
 --   amend the compare meta for a patch by appending those nulls, and strip that

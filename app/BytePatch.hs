@@ -91,7 +91,7 @@ liftProcessError :: MonadIO m => ExceptT Error m a -> m a
 liftProcessError action =
     runExceptT action >>= \case
       Left  e -> quit e
-      Right a -> return a
+      Right a -> pure a
 
 liftMapProcessError :: MonadError Error m => (e -> Error) -> Either e a -> m a
 liftMapProcessError f = liftEither . mapLeft f
@@ -207,7 +207,7 @@ patchPureBinCompareFwd si ps = do
     bsIn <- readStream si
     case Apply.runPureBinCompareFwd ps bsIn of
       Left  e     -> quit $ ErrorProcessApply $ show e
-      Right bsOut -> return $ BL.toStrict bsOut
+      Right bsOut -> pure $ BL.toStrict bsOut
 
 cmdPatchBinCompareFwd
     :: forall v m
@@ -261,7 +261,7 @@ prep
     -> Bytes
     -> m [Patch Int '[Compare.Meta v, Bin.Meta] Bytes]
 prep c bs = case c.cPsFmtData of
-  CDataBytes -> prep' @HexByteString c (return . fmap unHexPatch) bs
+  CDataBytes -> prep' @HexByteString c (pure . fmap unHexPatch) bs
   CDataTextBin BR.Text.UTF8 BR.ByteString.C ->
       prep' @Text @(AsByteString 'BR.ByteString.C) c (binTextifyPatches @'BR.Text.UTF8) bs
   CDataAsm Asm.ArmV8ThumbLE -> prep' c (processAsm @'Asm.ArmV8ThumbLE) bs
@@ -291,7 +291,7 @@ binTextifyPatch
 binTextifyPatch p = liftEither $ do
     pTextEnc <- liftMapProcessError (Error . show) $ traverse (refine @enc) p
     pBs <- liftMapProcessError (Error . show) $ traverse (BR.Text.encodeToRep @rep) pTextEnc
-    return pBs
+    pure pBs
 
 -- Binrep-compare, parsing @a@ and failably converting to @b@, In many cases,
 -- you may want to parse and binrep the same type -- in such cases, use 'pure'.
@@ -315,7 +315,7 @@ prep' c fBin bs =
                 >>= processBin @b
                 >>= processLinearize
       CNoAlign ->     processDecode bs
-                  >>= return . map Simple.convertBin
+                  >>= pure . map Simple.convertBin
                   >>= fBin
                   >>= processBin @b
                   >>= processLinearize

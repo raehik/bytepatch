@@ -37,7 +37,7 @@ genPatchList = skip []
         -- why no Random Natural...
         nSkip <- choose (0, naturalToInteger n)
         gen ps (naturalFromInteger nSkip) $ n - (fromIntegral nSkip)
-    gen ps _     0 = return ps
+    gen ps _     0 = pure ps
     gen ps nSkip n = do
         a <- genBoundList n 1
         let n' = n - (fromIntegral (length a))
