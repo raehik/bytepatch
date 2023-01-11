@@ -88,7 +88,7 @@ dependencies:
 - singletons ^>= 3.0
 - singletons-th ^>= 3.1
 - singletons-base ^>= 3.1
-- binrep
+- binrep ^>= 0.3.1
 
 library:
   source-dirs: src
@@ -105,7 +105,7 @@ executables:
     - bytepatch
     - optparse-applicative ^>= 0.17
     - yaml ^>= 0.11.6.0
-    - refined ^>= 0.7
+    - refined >= 0.7 && < 0.9
 
 tests:
   spec:

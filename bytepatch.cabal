@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -87,7 +87,7 @@ library
   build-depends:
       aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
-    , binrep
+    , binrep >=0.3.1 && <0.4
     , blake3 ==0.2.*
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
@@ -103,7 +103,7 @@ library
     , text >=1.2.4.1 && <1.3
     , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
-  default-language: Haskell2010
+  default-language: GHC2021
 
 executable bytepatch
   main-is: Main.hs
@@ -151,7 +151,7 @@ executable bytepatch
   build-depends:
       aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
-    , binrep
+    , binrep >=0.3.1 && <0.4
     , blake3 ==0.2.*
     , bytepatch
     , bytestring >=0.10 && <0.12
@@ -163,7 +163,7 @@ executable bytepatch
     , mtl >=2.2.2 && <2.3
     , optics >=0.3 && <0.5
     , optparse-applicative ==0.17.*
-    , refined ==0.7.*
+    , refined >=0.7 && <0.9
     , singletons ==3.0.*
     , singletons-base ==3.1.*
     , singletons-th ==3.1.*
@@ -171,7 +171,7 @@ executable bytepatch
     , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
     , yaml >=0.11.6.0 && <0.12
-  default-language: Haskell2010
+  default-language: GHC2021
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -223,7 +223,7 @@ test-suite spec
       QuickCheck >=2.14.2 && <2.15
     , aeson >=2.0.2.0 && <2.1
     , base >=4.12 && <5
-    , binrep
+    , binrep >=0.3.1 && <0.4
     , blake3 ==0.2.*
     , bytepatch
     , bytestring >=0.10 && <0.12
@@ -241,4 +241,4 @@ test-suite spec
     , text >=1.2.4.1 && <1.3
     , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
-  default-language: Haskell2010
+  default-language: GHC2021
