@@ -16,7 +16,7 @@
           };
           # buildTools = hp: { fourmolu = hp.fourmolu; ghcid = null; };
           overrides = self: super: {
-            # 2023-01-11 raehik: binrep broken
+            # 2023-01-11 raehik: nixpkgs binrep broken
             # pending PR: https://github.com/NixOS/nixpkgs/pull/210212
             binrep = pkgs.haskell.lib.overrideCabal super.binrep (oa: {
               version = "0.3.1";

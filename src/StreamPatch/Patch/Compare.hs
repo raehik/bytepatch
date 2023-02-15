@@ -33,7 +33,7 @@ import Text.Megaparsec.Char qualified as MC
 import Text.Megaparsec.Char.Lexer qualified as MCL
 
 import BLAKE3 qualified as B3
-import Data.ByteArray qualified as BA
+import Data.ByteArray.Sized qualified as BA
 import Data.ByteString qualified as B
 import Data.Word ( Word8 )
 
@@ -196,7 +196,7 @@ instance Compare ('ViaEq 'PrefixOf) BS.ByteString where
 -- I unpack to '[Word8]' then repack to 'ByteString' because the memory library
 -- is very keen on complicated unsafe IO. cheers no thanks
 hashB3 :: BS.ByteString -> BS.ByteString
-hashB3 bs = BS.pack $ BA.unpack $ B3.hash @B3.DEFAULT_DIGEST_LEN [bs]
+hashB3 bs = BA.unSizedByteArray $ B3.hash @B3.DEFAULT_DIGEST_LEN Nothing [bs]
 
 class SwapCompare a (vFrom :: Via) (vTo :: Via) where
     swapCompare :: CompareRep vFrom a -> Either String (CompareRep vTo a)
