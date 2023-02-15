@@ -1,12 +1,12 @@
 name: bytepatch
-version: 0.4.0
+version: 0.4.1
 synopsis: Patch byte-representable data in a bytestream
 description: Please see README.md.
 extra-source-files:
 - README.md
 - CHANGELOG.md
 category: CLI
-tested-with: GHC ==9.2.3
+tested-with: GHC ==9.2.4
 license: MIT
 license-file: LICENSE
 

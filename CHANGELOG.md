@@ -1,3 +1,6 @@
+## 0.4.1 (2023-02-15)
+  * bump blake3 dependency to 0.3
+
 ## 0.4.0 (2022-07-08)
   * lots of refactoring, breaking, removing
   * clean up FunctorRec into standalone HFunctorList module
