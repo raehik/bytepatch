@@ -86,8 +86,8 @@ dependencies:
 - blake3 ^>= 0.3
 - memory ^>= 0.17
 - singletons ^>= 3.0
-- singletons-th ^>= 3.1
-- singletons-base ^>= 3.1
+- singletons-th ^>= 3.2 # 3.2 = GHC 9.6
+- singletons-base ^>= 3.2
 - binrep ^>= 0.3.1
 
 library:
