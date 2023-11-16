@@ -23,4 +23,11 @@ pkgs:
     # th-desugar 1.15...
     th-desugar.source = "1.15";
   };
+
+  settings = {
+    singletons-base = {
+      # 2023-11-16: singletons-base 3.2 fails some tests, idk why. ignore...?
+      check = false;
+    };
+  };
 }

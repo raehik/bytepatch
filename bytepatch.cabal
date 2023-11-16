@@ -85,22 +85,22 @@ library
       TypeOperators
   ghc-options: -Wall
   build-depends:
-      aeson >=2.0.2.0 && <2.1
+      aeson >=2.1 && <2.3
     , base >=4.12 && <5
-    , binrep >=0.3.1 && <0.4
+    , binrep >=0.5.0 && <0.6
     , blake3 ==0.3.*
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
     , heystone >=0.1.0 && <0.2
-    , megaparsec >=9.0 && <9.3
-    , memory ==0.17.*
-    , mtl >=2.2.2 && <2.3
+    , megaparsec >=9.3 && <9.7
+    , memory ==0.18.*
+    , mtl >=2.3.1 && <2.4
     , optics >=0.3 && <0.5
     , singletons ==3.0.*
     , singletons-base ==3.2.*
     , singletons-th ==3.2.*
-    , text >=1.2.4.1 && <1.3
+    , text
     , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
   default-language: GHC2021
@@ -149,25 +149,25 @@ executable bytepatch
       TypeOperators
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson >=2.0.2.0 && <2.1
+      aeson >=2.1 && <2.3
     , base >=4.12 && <5
-    , binrep >=0.3.1 && <0.4
+    , binrep >=0.5.0 && <0.6
     , blake3 ==0.3.*
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
     , heystone >=0.1.0 && <0.2
-    , megaparsec >=9.0 && <9.3
-    , memory ==0.17.*
-    , mtl >=2.2.2 && <2.3
+    , megaparsec >=9.3 && <9.7
+    , memory ==0.18.*
+    , mtl >=2.3.1 && <2.4
     , optics >=0.3 && <0.5
     , optparse-applicative ==0.17.*
     , refined >=0.7 && <0.9
     , singletons ==3.0.*
     , singletons-base ==3.2.*
     , singletons-th ==3.2.*
-    , text >=1.2.4.1 && <1.3
+    , text
     , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
     , yaml >=0.11.6.0 && <0.12
@@ -218,27 +218,27 @@ test-suite spec
       TypeOperators
   ghc-options: -Wall
   build-tool-depends:
-      hspec-discover:hspec-discover >=2.7 && <2.10
+      hspec-discover:hspec-discover >=2.10 && <2.12
   build-depends:
-      QuickCheck >=2.14.2 && <2.15
-    , aeson >=2.0.2.0 && <2.1
+      QuickCheck >=2.14.3 && <2.15
+    , aeson >=2.1 && <2.3
     , base >=4.12 && <5
-    , binrep >=0.3.1 && <0.4
+    , binrep >=0.5.0 && <0.6
     , blake3 ==0.3.*
     , bytepatch
     , bytestring >=0.10 && <0.12
     , either >=5.0.1.1 && <5.1
     , generic-optics >=2.2.1.0 && <2.3
     , heystone >=0.1.0 && <0.2
-    , hspec >=2.7 && <2.10
-    , megaparsec >=9.0 && <9.3
-    , memory ==0.17.*
-    , mtl >=2.2.2 && <2.3
+    , hspec >=2.10 && <2.12
+    , megaparsec >=9.3 && <9.7
+    , memory ==0.18.*
+    , mtl >=2.3.1 && <2.4
     , optics >=0.3 && <0.5
     , singletons ==3.0.*
     , singletons-base ==3.2.*
     , singletons-th ==3.2.*
-    , text >=1.2.4.1 && <1.3
+    , text
     , text-short >=0.1.5 && <0.2
     , vinyl >=0.14.1 && <0.15
   default-language: GHC2021
