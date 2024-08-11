@@ -1,0 +1,6 @@
+- data: "xyz"
+  at:
+  - seek: 0
+    compare: "123"
+    null_terminates: 4
+    max_bytes: 5

@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           bytepatch
-version:        0.4.1
+version:        1.0.0
 synopsis:       Patch byte-representable data in a bytestream
 description:    Please see README.md.
 category:       CLI
@@ -16,8 +16,6 @@ maintainer:     Ben Orchard <thefirstmuffinman@gmail.com>
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
-tested-with:
-    GHC ==9.2.4
 extra-source-files:
     README.md
     CHANGELOG.md
@@ -28,217 +26,95 @@ source-repository head
 
 library
   exposed-modules:
-      Binrep.Type.Assembly
-      Binrep.Type.Assembly.Assemble
-      Binrep.Type.Assembly.Disassemble
-      Raehik.HFunctorMap
-      StreamPatch.Apply
-      StreamPatch.Example
-      StreamPatch.HFunctorList
-      StreamPatch.Patch
-      StreamPatch.Patch.Align
-      StreamPatch.Patch.Binary
-      StreamPatch.Patch.Compare
-      StreamPatch.Patch.Compile
-      StreamPatch.Patch.Linearize.Common
-      StreamPatch.Patch.Linearize.InPlace
-      StreamPatch.Patch.Linearize.Insert
-      StreamPatch.Seek
-      StreamPatch.Simple
-      StreamPatch.Stream
-      StreamPatch.Util
+      Bytepatch.Schema
+      Data.ByteString.RaehikExt
+      Raehik.HexByteString
   other-modules:
       Paths_bytepatch
   hs-source-dirs:
       src
   default-extensions:
-      EmptyCase
       LambdaCase
-      InstanceSigs
-      BangPatterns
-      ExplicitNamespaces
-      DerivingStrategies
+      NoStarIsType
       DerivingVia
-      StandaloneDeriving
       DeriveAnyClass
-      DeriveGeneric
-      DeriveDataTypeable
-      DeriveFunctor
-      DeriveFoldable
-      DeriveTraversable
-      DeriveLift
-      FlexibleContexts
-      FlexibleInstances
-      MultiParamTypeClasses
       GADTs
-      PolyKinds
       RoleAnnotations
-      RankNTypes
-      TypeApplications
       DefaultSignatures
       TypeFamilies
       DataKinds
       MagicHash
-      ImportQualifiedPost
-      StandaloneKindSignatures
-      ScopedTypeVariables
-      TypeOperators
-  ghc-options: -Wall
+  ghc-options: -Wall -Wno-unticked-promoted-constructors
   build-depends:
-      aeson >=2.1 && <2.3
-    , base >=4.12 && <5
-    , binrep >=0.5.0 && <0.6
-    , blake3 ==0.3.*
-    , bytestring >=0.10 && <0.12
-    , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.1.0 && <2.3
-    , heystone >=0.1.0 && <0.2
-    , megaparsec >=9.3 && <9.7
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <2.4
-    , optics >=0.3 && <0.5
-    , singletons ==3.0.*
-    , singletons-base ==3.2.*
-    , singletons-th ==3.2.*
+      aeson
+    , base
+    , bytestring
+    , bytezap
+    , streampatch
     , text
-    , text-short >=0.1.5 && <0.2
-    , vinyl >=0.14.1 && <0.15
+    , yaml
   default-language: GHC2021
 
 executable bytepatch
   main-is: Main.hs
   other-modules:
-      BytePatch
-      BytePatch.CLI
-      BytePatch.Config
-      Raehik.CLI.Stream
+      Bytepatch.CLI
+      Bytepatch.CLI.Common
+      Bytepatch.CLI.Patch
+      Bytepatch.CLI.Transform
       Paths_bytepatch
   hs-source-dirs:
       app
   default-extensions:
-      EmptyCase
       LambdaCase
-      InstanceSigs
-      BangPatterns
-      ExplicitNamespaces
-      DerivingStrategies
+      NoStarIsType
       DerivingVia
-      StandaloneDeriving
       DeriveAnyClass
-      DeriveGeneric
-      DeriveDataTypeable
-      DeriveFunctor
-      DeriveFoldable
-      DeriveTraversable
-      DeriveLift
-      FlexibleContexts
-      FlexibleInstances
-      MultiParamTypeClasses
       GADTs
-      PolyKinds
       RoleAnnotations
-      RankNTypes
-      TypeApplications
       DefaultSignatures
       TypeFamilies
       DataKinds
       MagicHash
-      ImportQualifiedPost
-      StandaloneKindSignatures
-      ScopedTypeVariables
-      TypeOperators
-  ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wno-unticked-promoted-constructors
   build-depends:
-      aeson >=2.1 && <2.3
-    , base >=4.12 && <5
-    , binrep >=0.5.0 && <0.6
-    , blake3 ==0.3.*
+      aeson
+    , base
     , bytepatch
-    , bytestring >=0.10 && <0.12
-    , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.1.0 && <2.3
-    , heystone >=0.1.0 && <0.2
-    , megaparsec >=9.3 && <9.7
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <2.4
-    , optics >=0.3 && <0.5
-    , optparse-applicative ==0.17.*
-    , refined >=0.7 && <0.9
-    , singletons ==3.0.*
-    , singletons-base ==3.2.*
-    , singletons-th ==3.2.*
+    , bytestring
+    , bytezap
+    , streampatch
     , text
-    , text-short >=0.1.5 && <0.2
-    , vinyl >=0.14.1 && <0.15
-    , yaml >=0.11.6.0 && <0.12
+    , yaml
   default-language: GHC2021
 
-test-suite spec
+benchmark bench
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: Main.hs
   other-modules:
-      StreamPatch.ApplySpec
-      StreamPatch.Patch.AlignSpec
-      StreamPatch.Patch.LinearizeSpec
-      Util
       Paths_bytepatch
   hs-source-dirs:
-      test
+      bench
   default-extensions:
-      EmptyCase
       LambdaCase
-      InstanceSigs
-      BangPatterns
-      ExplicitNamespaces
-      DerivingStrategies
+      NoStarIsType
       DerivingVia
-      StandaloneDeriving
       DeriveAnyClass
-      DeriveGeneric
-      DeriveDataTypeable
-      DeriveFunctor
-      DeriveFoldable
-      DeriveTraversable
-      DeriveLift
-      FlexibleContexts
-      FlexibleInstances
-      MultiParamTypeClasses
       GADTs
-      PolyKinds
       RoleAnnotations
-      RankNTypes
-      TypeApplications
       DefaultSignatures
       TypeFamilies
       DataKinds
       MagicHash
-      ImportQualifiedPost
-      StandaloneKindSignatures
-      ScopedTypeVariables
-      TypeOperators
-  ghc-options: -Wall
-  build-tool-depends:
-      hspec-discover:hspec-discover >=2.10 && <2.12
+  ghc-options: -Wall -Wno-unticked-promoted-constructors
   build-depends:
-      QuickCheck >=2.14.3 && <2.15
-    , aeson >=2.1 && <2.3
-    , base >=4.12 && <5
-    , binrep >=0.5.0 && <0.6
-    , blake3 ==0.3.*
+      aeson
+    , base
     , bytepatch
-    , bytestring >=0.10 && <0.12
-    , either >=5.0.1.1 && <5.1
-    , generic-optics >=2.2.1.0 && <2.3
-    , heystone >=0.1.0 && <0.2
-    , hspec >=2.10 && <2.12
-    , megaparsec >=9.3 && <9.7
-    , memory ==0.18.*
-    , mtl >=2.3.1 && <2.4
-    , optics >=0.3 && <0.5
-    , singletons ==3.0.*
-    , singletons-base ==3.2.*
-    , singletons-th ==3.2.*
+    , bytestring
+    , bytezap
+    , gauge
+    , streampatch
     , text
-    , text-short >=0.1.5 && <0.2
-    , vinyl >=0.14.1 && <0.15
+    , yaml
   default-language: GHC2021

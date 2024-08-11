@@ -1,0 +1,7 @@
+- data: "xyz"
+  at:
+  - seek: 0x0
+    check:
+      data: "123"
+      length: 3
+      nullterm: 3

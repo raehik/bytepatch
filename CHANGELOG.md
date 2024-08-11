@@ -1,3 +1,6 @@
+## 1.0.0 (unreleased)
+Rewrite.
+
 ## 0.4.1 (2023-02-15)
   * bump blake3 dependency to 0.3
 
